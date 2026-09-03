@@ -1,5 +1,15 @@
 ---
 repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Keep this revision aligned with the ruff pin in requirements.txt and with
+    # growspace_manager, whose rule set pyproject.toml reuses verbatim.
+    rev: v0.15.12
+    hooks:
+      - id: ruff-check
+        args:
+          - --fix
+      - id: ruff-format
+        files: ^(custom_components|tests)/.+\.(py|pyi)$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
@@ -15,6 +25,7 @@ repos:
         args:
           - --branch=main
   - repo: https://github.com/adrienverge/yamllint.git
+    # Keep this revision aligned with the yamllint pin in requirements.txt.
     rev: v1.37.1
     hooks:
       - id: yamllint
@@ -25,3 +36,24 @@ repos:
         additional_dependencies:
           - prettier@3.6.2
           - prettier-plugin-sort-json@4.2.0
+  - repo: local
+    hooks:
+      # `../../.venv` is the repository venv seen from a worktree at
+      # .worktrees/<name> — the depth AGENTS.md requires. From the main
+      # checkout it resolves to ~/dev/.venv, which does not exist, and every
+      # commit from the shared checkout is rejected as a side effect.
+      - id: pytest
+        name: pytest
+        entry: ../../.venv/bin/pytest
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: ^(custom_components|tests)/.+\.py$
+      - id: mypy
+        name: mypy
+        entry: ../../.venv/bin/mypy
+        args: [--follow-imports=silent]
+        language: system
+        require_serial: true
+        types_or: [python, pyi]
+        files: ^custom_components/.+\.(py|pyi)$

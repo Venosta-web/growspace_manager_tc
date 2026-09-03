@@ -9,6 +9,10 @@ Optional tissue-culture companion integration for
 maintenance actions, stores culture medium recipes, and links the plant
 phenotypes that perform best on each recipe.
 
-Design in progress — decisions are recorded in [`docs/adr/`](docs/adr/).
-Phenotype identity is owned by Growspace Manager; this integration references
-it and does not run without it.
+The integration installs and sets up today; the features are still being
+built. Decisions are recorded in [`docs/adr/`](docs/adr/) and the vocabulary in
+[`CONTEXT.md`](CONTEXT.md).
+
+Phenotype identity is owned by Growspace Manager: this integration references it
+and does not run without it. Setup refuses with an explanation if Growspace
+Manager is not installed and configured first.

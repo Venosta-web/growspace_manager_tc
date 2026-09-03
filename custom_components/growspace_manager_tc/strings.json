@@ -1,0 +1,19 @@
+{
+  "config": {
+    "abort": {
+      "growspace_manager_missing": "Growspace Manager is not set up. Tissue culture tracking references phenotypes that Growspace Manager owns, so add that integration first, then add Growspace Manager TC.",
+      "single_instance_allowed": "Growspace Manager TC is already set up. One entry covers every culture line."
+    },
+    "step": {
+      "user": {
+        "description": "Tracks your in-vitro culture lines, their maintenance history, and the media they grow on. Phenotypes stay in Growspace Manager; this integration only references them.",
+        "title": "Set up tissue culture tracking"
+      }
+    }
+  },
+  "exceptions": {
+    "growspace_manager_missing": {
+      "message": "Growspace Manager is not loaded. Growspace Manager TC references phenotypes it owns and cannot start without it. Set up Growspace Manager, or remove the Growspace Manager TC entry."
+    }
+  }
+}
