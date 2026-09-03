@@ -18,6 +18,14 @@ _Avoid_: vessel, jar, plant, specimen
 Whether a Culture is in `multiplication` or `rooting`. The stage selects which replate interval from the Culture Line applies.
 _Avoid_: phase, media stage
 
+**Plantlet Count**
+The number of plantlets in a Culture, recorded at each Replate. Optional but load-bearing: per-vessel multiplication rate is only derivable later if the count exists now.
+_Avoid_: vessel size, density
+
+**Location**
+A free-text optional label for where a Culture's vessel physically sits (shelf, rack, tub). Filterable text, never a structured hierarchy.
+_Avoid_: zone, growspace, shelf list
+
 **Introduction**
 The act of starting a Culture Line by placing an explant from a phenotype into culture. One line, one introduction.
 _Avoid_: import, inoculation
