@@ -1,0 +1,39 @@
+---
+name: Lint
+
+"on":
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: >-
+    validation-${{ github.workflow }}-${{ github.event_name }}-${{
+    github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  repository-files:
+    name: Repository files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        name: Setup Python
+        with:
+          python-version: "3.14"
+      - name: Install pre-commit
+        run: python -m pip install --upgrade "pre-commit==4.6.2"
+      - name: Check spelling
+        run: pre-commit run codespell --all-files
+      - name: Check JSON
+        run: pre-commit run check-json --all-files
+      - name: Check YAML style
+        run: pre-commit run yamllint --all-files
+      - name: Check formatting
+        run: pre-commit run prettier --all-files
