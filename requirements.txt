@@ -1,0 +1,35 @@
+# This file is the CI test environment, not what HACS users install — the shipped
+# dependency ranges live in custom_components/growspace_manager_tc/manifest.json,
+# which declares none: this integration has no runtime dependency beyond Home
+# Assistant itself.
+#
+# Pinning policy (mirrors growspace_manager's ADR-0020): CI must resolve the same
+# set on any given commit regardless of when it runs. Two mechanisms cover that,
+# in order of precedence:
+#
+#   1. Home Assistant's own homeassistant/package_constraints.txt, applied as a
+#      `-c` constraints file by the two-phase install in tests.yaml. It governs
+#      every dependency Home Assistant itself pins — do not restate those here.
+#   2. pytest-homeassistant-custom-component, which pins homeassistant plus the
+#      whole pytest stack exactly (pytest, pytest-asyncio, pytest-cov,
+#      pytest-xdist, coverage, freezegun, requests-mock, syrupy).
+#
+# Anything left bare would float under a fresh resolve. Add an explicit `==` pin
+# for anything neither mechanism covers.
+
+# Home Assistant Core (minimal)
+# Kept in lockstep with pytest-homeassistant-custom-component, which pins this
+# exact homeassistant version; bumping one requires bumping the other.
+homeassistant==2026.8.1
+
+# Test dependencies
+pytest-homeassistant-custom-component==0.13.355
+
+# Local dev tooling — CI installs separate copies using matching pins in
+# lint.yaml. Keep versions synchronized so local checks agree with the gate.
+# Move the corresponding pre-commit rev with any Ruff or yamllint version bump.
+ruff==0.15.12
+mypy==1.20.2
+pre-commit==4.6.2
+yamllint==1.37.1
+codespell

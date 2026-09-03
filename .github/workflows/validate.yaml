@@ -1,0 +1,42 @@
+---
+name: HACS/HASS
+
+"on":
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: >-
+    validation-${{ github.workflow }}-${{ github.event_name }}-${{
+    github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  validate-hassfest:
+    name: Hassfest validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6.0.2
+      - name: validation
+        uses: home-assistant/actions/hassfest@master
+
+  validate-hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6.0.2
+      - name: validation
+        uses: hacs/action@main
+        with:
+          category: integration
+          # This integration has no entry in home-assistant/brands, and cannot
+          # have one until it is published there.
+          ignore: brands

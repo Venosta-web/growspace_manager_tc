@@ -1,0 +1,14 @@
+{
+  "domain": "growspace_manager_tc",
+  "name": "Growspace Manager TC",
+  "after_dependencies": ["growspace_manager"],
+  "codeowners": ["@Venosta-web"],
+  "config_flow": true,
+  "documentation": "https://github.com/Venosta-web/growspace_manager_tc",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Venosta-web/growspace_manager_tc/issues",
+  "loggers": ["custom_components.growspace_manager_tc"],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

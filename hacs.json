@@ -1,0 +1,6 @@
+{
+  "name": "Growspace Manager TC",
+  "hacs": "2.0.5",
+  "homeassistant": "2026.8.1",
+  "render_readme": true
+}

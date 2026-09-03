@@ -37,3 +37,46 @@ jobs:
         run: pre-commit run yamllint --all-files
       - name: Check formatting
         run: pre-commit run prettier --all-files
+
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        name: Setup Python
+        with:
+          python-version: "3.14"
+      - name: Install lint tools
+        run: python -m pip install --upgrade "ruff==0.15.12"
+      - name: ruff check
+        run: ruff check custom_components/ tests/
+      - name: ruff format --check
+        run: ruff format --check custom_components/ tests/
+
+  mypy:
+    name: mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        name: Setup Python
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+      # Two-phase constrained install, matching tests.yaml — see the comment in
+      # requirements.txt for why the constraints file is applied separately.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "$(grep '^homeassistant==' requirements.txt)"
+          constraints_file="$(
+            python -c 'import homeassistant, pathlib; print(
+              pathlib.Path(homeassistant.__file__).parent
+              / "package_constraints.txt"
+            )'
+          )"
+          pip install -r requirements.txt -c "$constraints_file"
+      - name: mypy
+        run: mypy --follow-imports=silent custom_components/
