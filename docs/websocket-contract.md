@@ -14,7 +14,14 @@ generated, never hand-edited:
 
 ```bash
 ../../.venv/bin/pytest tests/contract/ --regenerate-contract-fixture
+pre-commit run prettier --all-files
 ```
+
+The second line is not optional. Regeneration writes Python's JSON formatting,
+which expands every array one element per line; prettier keeps short ones
+inline, and the lint workflow's **Repository files** job fails on the
+difference. The contract tests compare parsed payloads, so reformatting cannot
+change what they assert — which is exactly why nothing but that job notices.
 
 ## Presence detection
 

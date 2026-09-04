@@ -5,9 +5,6 @@
     "cultures": 2
   },
   "contract_version": 1,
-  "features": [
-    "culture_media",
-    "culture_lines"
-  ],
+  "features": ["culture_media", "culture_lines"],
   "integration_version": "0.1.0"
 }
