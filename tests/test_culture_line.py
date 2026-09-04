@@ -321,7 +321,7 @@ def test_the_wire_payload_carries_the_cultures_the_storage_shape_omits() -> None
 
     payload = line.to_payload(repository.cultures_of(line.id))
 
-    assert payload["cultures"] == [culture.to_dict()]
+    assert payload["cultures"] == [culture.to_payload(line.replate_interval_days)]
     assert payload["id"] == line.id
 
 

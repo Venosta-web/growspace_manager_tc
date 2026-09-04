@@ -11,6 +11,7 @@ from custom_components.growspace_manager_tc.const import (
     DOMAIN,
     FEATURE_CULTURE_LINES,
     FEATURE_CULTURE_MEDIA,
+    FEATURE_MAINTENANCE,
     STORAGE_KEY,
     STORAGE_VERSION,
     TC_CONTRACT_VERSION,
@@ -69,8 +70,13 @@ async def test_manifest_reports_the_contract(
     assert response["result"] == {
         "contract_version": TC_CONTRACT_VERSION,
         "integration_version": installed_version,
-        "features": [FEATURE_CULTURE_MEDIA, FEATURE_CULTURE_LINES],
-        "collections": {"culture_media": 0, "culture_lines": 0, "cultures": 0},
+        "features": [FEATURE_CULTURE_MEDIA, FEATURE_CULTURE_LINES, FEATURE_MAINTENANCE],
+        "collections": {
+            "culture_media": 0,
+            "culture_lines": 0,
+            "cultures": 0,
+            "maintenance_actions": 0,
+        },
     }
 
 
@@ -100,6 +106,7 @@ async def test_manifest_counts_persisted_collections(
         "culture_lines": 2,
         "cultures": 0,
         "culture_media": 0,
+        "maintenance_actions": 0,
     }
 
 

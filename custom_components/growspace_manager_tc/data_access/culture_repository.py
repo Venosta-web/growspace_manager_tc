@@ -11,20 +11,34 @@ from ..const import (
     COLLECTION_CULTURE_LINES,
     COLLECTION_CULTURE_MEDIA,
     COLLECTION_CULTURES,
+    COLLECTION_MAINTENANCE_ACTIONS,
 )
 from ..models.common import (
     TcConflictError,
     TcNotFoundError,
     TcValidationError,
     utc_now_iso,
+    whole_number,
 )
 from ..models.culture_line import (
     Culture,
     CultureLine,
+    CultureStage,
+    CultureStatus,
     PhenotypeReference,
     ReplateIntervals,
 )
 from ..models.culture_medium import CultureMedium, MediumFormulation
+from ..models.maintenance import (
+    DiscardReason,
+    MaintenanceAction,
+    MaintenanceActionType,
+    ReplateVessel,
+    note_text,
+    requested_vessel,
+    requested_vessels,
+    required_note_text,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -106,9 +120,11 @@ class CultureRepository:
     Maintenance Action can write one Culture without rewriting the line it
     belongs to.  The board payload joins the two back together on the way out.
 
-    The remaining V1 model tickets add the collections still missing — platings
-    and pairings.  Anything persisted that this version does not decode is kept
-    verbatim and written back untouched.
+    Maintenance Actions are a third collection, and an append-only one: this
+    class writes rows into it and has no method that edits or removes one.  The
+    remaining V1 model ticket adds the collection still missing — pairings.
+    Anything persisted that this version does not decode is kept verbatim and
+    written back untouched.
     """
 
     def __init__(self) -> None:
@@ -117,6 +133,7 @@ class CultureRepository:
         self._media = _Collection[CultureMedium](COLLECTION_CULTURE_MEDIA)
         self._lines = _Collection[CultureLine](COLLECTION_CULTURE_LINES)
         self._cultures = _Collection[Culture](COLLECTION_CULTURES)
+        self._actions = _Collection[MaintenanceAction](COLLECTION_MAINTENANCE_ACTIONS)
 
     # -- persistence ------------------------------------------------------
 
@@ -139,6 +156,10 @@ class CultureRepository:
         self._keep_unindexable(
             self._cultures,
             self._cultures.load(raw[self._cultures.name], Culture.from_dict),
+        )
+        self._keep_unindexable(
+            self._actions,
+            self._actions.load(raw[self._actions.name], MaintenanceAction.from_dict),
         )
 
     def _keep_unindexable(self, collection: _Collection[Any], raw: Any) -> None:
@@ -172,7 +193,7 @@ class CultureRepository:
 
     @property
     def _collections(self) -> tuple[_Collection[Any], ...]:
-        return (self._media, self._lines, self._cultures)
+        return (self._media, self._lines, self._cultures, self._actions)
 
     # -- culture media ----------------------------------------------------
 
@@ -339,3 +360,242 @@ class CultureRepository:
         updated = self.culture_line(line_id).with_archived(archived)
         self._lines.records[line_id] = updated
         return updated
+
+    # -- maintenance actions ----------------------------------------------
+
+    def culture(self, culture_id: str) -> Culture:
+        """Return one Culture, or raise `TcNotFoundError`."""
+        culture = self._cultures.records.get(culture_id)
+        if culture is None:
+            raise TcNotFoundError(f"No culture with ID {culture_id}.")
+        return culture
+
+    def maintenance_actions(
+        self, *, culture_id: str | None = None, line_id: str | None = None
+    ) -> list[MaintenanceAction]:
+        """Return recorded acts, newest first.
+
+        Newest first because that is the order the question is asked in — what
+        happened to this vessel lately — and the record set is append-only, so
+        the reverse of the order it was written in is exactly the reverse of
+        the order it happened in.  Ties break on the ID, so two acts recorded
+        in the same instant still order the same way on every read.
+        """
+        return sorted(
+            (
+                action
+                for action in self._actions.records.values()
+                if (culture_id is None or action.culture_id == culture_id)
+                and (line_id is None or action.line_id == line_id)
+            ),
+            key=lambda action: (action.recorded_at, action.id),
+            reverse=True,
+        )
+
+    def due_replates(self) -> list[tuple[CultureLine, Culture, str]]:
+        """Return every Culture awaiting a Replate, soonest due first.
+
+        Archived lines are left out: a line put away is not work, and a
+        calendar that kept reminding a grower about vessels they archived is
+        the reason they would stop trusting it.  A Culture with an unreadable
+        anchor has no due date and is left out too, rather than being given an
+        invented one.
+        """
+        due: list[tuple[CultureLine, Culture, str]] = []
+        for line in self.culture_lines():
+            if line.archived:
+                continue
+            for culture in self.cultures_of(line.id):
+                stamp = culture.replate_due_at(line.replate_interval_days)
+                if stamp is not None:
+                    due.append((line, culture, stamp))
+        return sorted(due, key=lambda entry: (entry[2], entry[1].id))
+
+    def replate_culture(
+        self,
+        culture_id: str,
+        medium_id: str,
+        medium_version: Any,
+        vessels: Any,
+        *,
+        note: Any = None,
+        now: str | None = None,
+    ) -> MaintenanceAction:
+        """Transfer a Culture onto fresh medium, dividing it if asked.
+
+        The first requested vessel is the Culture itself — its identity
+        survives the transfer — and every further one is a new Culture on the
+        same line at the same Stage.  The Medium Version is pinned on the act
+        rather than on the vessel (ADR-0004): what a Pairing later reads is the
+        placement, and a vessel replated three times has been on three of them.
+        """
+        culture = self._maintainable(culture_id)
+        medium = self.culture_medium(medium_id)
+        version = self._pinned_version(medium, medium_version)
+        requested = requested_vessels(vessels)
+        stamp = now or utc_now_iso()
+
+        kept, extras = requested[0], requested[1:]
+        count, location = requested_vessel(kept, culture.location)
+        replated = culture.replated(plantlet_count=count, location=location, now=stamp)
+        records = [replated]
+        for entry in extras:
+            count, location = requested_vessel(entry, culture.location)
+            records.append(
+                culture.divided(plantlet_count=count, location=location, now=stamp)
+            )
+
+        for record in records:
+            self._cultures.records[record.id] = record
+        self._cultures.claim()
+
+        return self._record(
+            MaintenanceAction.recorded(
+                replated,
+                MaintenanceActionType.REPLATE,
+                note=note_text(note),
+                medium_id=medium.id,
+                medium_version=version,
+                vessels=tuple(
+                    ReplateVessel(
+                        culture_id=record.id,
+                        plantlet_count=record.plantlet_count,
+                        location=record.location,
+                    )
+                    for record in records
+                ),
+                now=stamp,
+            )
+        )
+
+    def discard_culture(
+        self, culture_id: str, reason: Any, *, note: Any = None, now: str | None = None
+    ) -> MaintenanceAction:
+        """End a Culture with a reason. The vessel stays in history."""
+        culture = self._maintainable(culture_id)
+        discard_reason = _discard_reason(reason)
+        self._cultures.records[culture.id] = culture.ended(CultureStatus.DISCARDED)
+        return self._record(
+            MaintenanceAction.recorded(
+                culture,
+                MaintenanceActionType.DISCARD,
+                note=note_text(note),
+                reason=discard_reason,
+                now=now,
+            )
+        )
+
+    def note_on_culture(
+        self, culture_id: str, note: Any, *, now: str | None = None
+    ) -> MaintenanceAction:
+        """Record an observation against a Culture, changing nothing else.
+
+        The note is required rather than optional here: an empty note is not an
+        act, and recording one would put a row in the history that says nothing
+        happened.
+        """
+        culture = self._maintainable(culture_id)
+        return self._record(
+            MaintenanceAction.recorded(
+                culture,
+                MaintenanceActionType.NOTE,
+                note=required_note_text(note),
+                now=now,
+            )
+        )
+
+    def move_culture_to_rooting(
+        self, culture_id: str, *, note: Any = None, now: str | None = None
+    ) -> MaintenanceAction:
+        """Move a Culture to the rooting Stage.
+
+        Refused when it is already there.  A second move would record an act
+        that changed nothing, and the history is the one place where that
+        matters: a count of stage moves has to be a count of stage moves.
+        """
+        culture = self._maintainable(culture_id)
+        if culture.stage is CultureStage.ROOTING:
+            raise TcValidationError("That culture is already in rooting.")
+        self._cultures.records[culture.id] = culture.moved_to_rooting()
+        return self._record(
+            MaintenanceAction.recorded(
+                culture,
+                MaintenanceActionType.MOVE_TO_ROOTING,
+                note=note_text(note),
+                stage=CultureStage.ROOTING,
+                now=now,
+            )
+        )
+
+    def graduate_culture(
+        self, culture_id: str, *, note: Any = None, now: str | None = None
+    ) -> MaintenanceAction:
+        """End a Culture by taking it out of vitro.
+
+        A plain ending here, and nothing more: the bridge that creates the
+        corresponding Plant in Growspace Manager goes through that
+        integration's public service (ADR-0005) and is its own ticket.  What
+        this owes that bridge is a recorded, unambiguous end to point at.
+        """
+        culture = self._maintainable(culture_id)
+        self._cultures.records[culture.id] = culture.ended(CultureStatus.GRADUATED)
+        return self._record(
+            MaintenanceAction.recorded(
+                culture,
+                MaintenanceActionType.GRADUATE,
+                note=note_text(note),
+                now=now,
+            )
+        )
+
+    def _maintainable(self, culture_id: str) -> Culture:
+        """Return a Culture that can still be acted on, or refuse.
+
+        Every Maintenance Action goes through here, so an ended vessel cannot
+        be replated by one command and discarded twice by another — and the
+        refusal is `validation_failed` rather than a not-found, because the
+        board the grower is looking at is merely stale.
+        """
+        culture = self.culture(culture_id)
+        if not culture.active:
+            raise TcValidationError(
+                f"That culture has already been {culture.status.value}."
+            )
+        return culture
+
+    def _pinned_version(self, medium: CultureMedium, requested: Any) -> int:
+        """Return the Medium Version a Replate pins, or refuse.
+
+        A version outside the medium's history is a stale form rather than a
+        wrong type — the grower had the medium open while someone else edited
+        it — so it is named as a value to fix.
+        """
+        version = whole_number(requested, "Medium version", 1, 1_000_000)
+        if not any(entry.version == version for entry in medium.versions):
+            raise TcValidationError(
+                f"“{medium.name}” has no version {version}; it is at version "
+                f"{medium.current_version.version}."
+            )
+        return version
+
+    def _record(self, action: MaintenanceAction) -> MaintenanceAction:
+        """Append one act to the history.
+
+        The only writer of that collection, and it only ever adds: there is no
+        method here that edits or removes a Maintenance Action, because a
+        history that could be rewritten would make every number derived from it
+        — due dates, multiplication rates, the Plating trail — unreliable at
+        once.
+        """
+        self._actions.records[action.id] = action
+        self._actions.claim()
+        return action
+
+
+def _discard_reason(value: Any) -> DiscardReason:
+    """Return a Discard reason from the closed set, or raise."""
+    try:
+        return DiscardReason(value)
+    except ValueError:
+        allowed = ", ".join(member.value for member in DiscardReason)
+        raise TcValidationError(f"Reason must be one of: {allowed}.") from None

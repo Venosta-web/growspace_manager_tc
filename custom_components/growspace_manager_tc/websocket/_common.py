@@ -1,8 +1,9 @@
 """Shared plumbing for the TC WebSocket namespace.
 
-Two things every command in the namespace has to do, and neither is worth
-repeating per handler: find the loaded entry's storage, and turn a domain error
-into an error code the card already understands.
+Three things commands in the namespace have to do, and none is worth repeating
+per handler: find the loaded entry's storage, turn a domain error into an error
+code the card already understands, and assemble the board entry that every
+command touching a line or a vessel answers with.
 """
 
 from __future__ import annotations
@@ -104,3 +105,17 @@ def tc_command(handler: TcPayloadHandler) -> TcWsHandler:
         connection.send_result(msg["id"], payload)
 
     return wrapper
+
+
+def board_entry(storage: StorageManager, line_id: str) -> dict[str, Any]:
+    """Return one line with its Cultures, the way the board reads it.
+
+    Every command that changes a line or one of its vessels replies with this
+    rather than with the record it wrote: a Replate can divide one Culture into
+    several, so the smallest honest unit of change is the line, and a card
+    updating from a narrower reply would have to re-list to find the vessels it
+    had not been told about.
+    """
+    repository = storage.repository
+    line = repository.culture_line(line_id)
+    return line.to_payload(repository.cultures_of(line_id))

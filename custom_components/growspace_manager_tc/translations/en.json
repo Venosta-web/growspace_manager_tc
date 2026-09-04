@@ -11,6 +11,13 @@
       }
     }
   },
+  "entity": {
+    "calendar": {
+      "replates": {
+        "name": "Replates"
+      }
+    }
+  },
   "exceptions": {
     "growspace_manager_missing": {
       "message": "Growspace Manager is not loaded. Growspace Manager TC references phenotypes it owns and cannot start without it. Set up Growspace Manager, or remove the Growspace Manager TC entry."

@@ -13,7 +13,12 @@ from homeassistant.core import HomeAssistant
 # manifest counts whatever `as_dict` reports, and a key that only appeared once
 # a record existed would leave the card unable to tell a version that has the
 # collection from one that has never heard of it.
-EMPTY: dict[str, Any] = {"culture_media": {}, "culture_lines": {}, "cultures": {}}
+EMPTY: dict[str, Any] = {
+    "culture_media": {},
+    "culture_lines": {},
+    "cultures": {},
+    "maintenance_actions": {},
+}
 
 
 def test_repository_starts_empty() -> None:

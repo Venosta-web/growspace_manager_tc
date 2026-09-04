@@ -5,17 +5,29 @@
       "created_at": "2026-01-04T09:12:00+00:00",
       "cultures": [
         {
-          "id": "record-2",
-          "last_replated_at": "2026-01-04T09:12:00+00:00",
-          "line_id": "record-1",
+          "id": "record-3",
+          "last_replated_at": "2026-02-18T16:40:00+00:00",
+          "line_id": "record-2",
           "location": "Shelf A",
-          "plantlet_count": 6,
+          "plantlet_count": 5,
+          "replate_due_at": "2026-03-20T16:40:00+00:00",
           "stage": "multiplication",
           "started_at": "2026-01-04T09:12:00+00:00",
           "status": "active"
+        },
+        {
+          "id": "record-8",
+          "last_replated_at": "2026-02-18T16:40:00+00:00",
+          "line_id": "record-2",
+          "location": "Shelf B",
+          "plantlet_count": 4,
+          "replate_due_at": null,
+          "stage": "multiplication",
+          "started_at": "2026-02-18T16:40:00+00:00",
+          "status": "discarded"
         }
       ],
-      "id": "record-1",
+      "id": "record-2",
       "phenotype": {
         "id": "Blue Dream|Pheno 2",
         "name_snapshot": "Blue Dream \u2014 Pheno 2",
@@ -32,17 +44,18 @@
       "created_at": "2026-02-18T16:40:00+00:00",
       "cultures": [
         {
-          "id": "record-4",
+          "id": "record-5",
           "last_replated_at": "2026-02-18T16:40:00+00:00",
-          "line_id": "record-3",
+          "line_id": "record-4",
           "location": "",
           "plantlet_count": null,
+          "replate_due_at": "2026-03-11T16:40:00+00:00",
           "stage": "rooting",
           "started_at": "2026-02-18T16:40:00+00:00",
           "status": "active"
         }
       ],
-      "id": "record-3",
+      "id": "record-4",
       "phenotype": {
         "id": "Gelato 33|Cut B",
         "name_snapshot": "Gelato 33 \u2014 Cut B",
@@ -59,17 +72,18 @@
       "created_at": "2026-02-18T16:40:00+00:00",
       "cultures": [
         {
-          "id": "record-6",
+          "id": "record-7",
           "last_replated_at": "2026-02-18T16:40:00+00:00",
-          "line_id": "record-5",
+          "line_id": "record-6",
           "location": "",
           "plantlet_count": null,
+          "replate_due_at": "2026-03-20T16:40:00+00:00",
           "stage": "multiplication",
           "started_at": "2026-02-18T16:40:00+00:00",
           "status": "active"
         }
       ],
-      "id": "record-5",
+      "id": "record-6",
       "phenotype": {
         "id": "Zkittlez|Cut 4",
         "name_snapshot": "Zkittlez \u2014 Cut 4",

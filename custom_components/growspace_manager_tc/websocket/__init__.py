@@ -23,6 +23,17 @@ from .culture_media import (
     WS_TYPE_LIST_CULTURE_MEDIA,
     WS_TYPE_UPDATE_CULTURE_MEDIUM,
 )
+from .maintenance import (
+    COMMANDS as MAINTENANCE_COMMANDS,
+    DISCARD_REASONS,
+    MAINTENANCE_ACTIONS,
+    WS_TYPE_DISCARD,
+    WS_TYPE_GRADUATE,
+    WS_TYPE_MAINTENANCE_HISTORY,
+    WS_TYPE_MOVE_TO_ROOTING,
+    WS_TYPE_NOTE,
+    WS_TYPE_REPLATE,
+)
 from .manifest import (
     MANIFEST_FEATURES,
     SCHEMA_WS_GET_MANIFEST,
@@ -32,15 +43,23 @@ from .manifest import (
 )
 
 __all__ = [
+    "DISCARD_REASONS",
+    "MAINTENANCE_ACTIONS",
     "MANIFEST_FEATURES",
     "SCHEMA_WS_GET_MANIFEST",
     "WS_TYPE_CREATE_CULTURE_MEDIUM",
     "WS_TYPE_DELETE_CULTURE_MEDIUM",
+    "WS_TYPE_DISCARD",
     "WS_TYPE_GET_MANIFEST",
+    "WS_TYPE_GRADUATE",
     "WS_TYPE_INTRODUCE_CULTURE_LINE",
     "WS_TYPE_LIST_CULTURE_LINES",
     "WS_TYPE_LIST_CULTURE_MEDIA",
+    "WS_TYPE_MAINTENANCE_HISTORY",
+    "WS_TYPE_MOVE_TO_ROOTING",
+    "WS_TYPE_NOTE",
     "WS_TYPE_RELINK_PHENOTYPE",
+    "WS_TYPE_REPLATE",
     "WS_TYPE_SET_CULTURE_LINE_ARCHIVED",
     "WS_TYPE_UPDATE_CULTURE_MEDIUM",
     "async_build_manifest",
@@ -67,5 +86,6 @@ def async_register_commands(hass: HomeAssistant) -> None:
     for command_type, handler, schema in (
         *CULTURE_MEDIA_COMMANDS,
         *CULTURE_LINE_COMMANDS,
+        *MAINTENANCE_COMMANDS,
     ):
         websocket_api.async_register_command(hass, command_type, handler, schema)

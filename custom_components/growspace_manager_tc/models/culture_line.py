@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any, Final
 
@@ -277,8 +278,102 @@ class Culture:
             ),
         )
 
+    @property
+    def active(self) -> bool:
+        """Whether this Culture is still being maintained."""
+        return self.status is CultureStatus.ACTIVE
+
+    def replate_due_at(self, intervals: ReplateIntervals) -> str | None:
+        """Return when this Culture is next due a Replate, or None.
+
+        The anchor is the last Replate and the interval is the line's, chosen
+        by the Culture's current Stage — the whole of the Replate Due Date
+        rule, in one place, computed rather than stored.  Storing it would mean
+        a Culture moved to rooting kept a due date computed from the
+        multiplication interval until something remembered to rewrite it.
+
+        `None` for a Culture that has ended: a discarded or graduated vessel is
+        not overdue, it is over.  `None` too for an anchor this version cannot
+        read, because a due date guessed from an unreadable stamp would be
+        shown to the grower as a fact.
+        """
+        if not self.active:
+            return None
+        try:
+            anchor = datetime.fromisoformat(self.last_replated_at)
+        except ValueError:
+            return None
+        return (anchor + timedelta(days=intervals.for_stage(self.stage))).isoformat()
+
+    def replated(
+        self,
+        *,
+        plantlet_count: int | None,
+        location: str,
+        now: str | None = None,
+    ) -> Culture:
+        """Return this Culture transferred onto fresh medium.
+
+        Same Culture: a Replate moves a plantlet group into a new vessel and its
+        identity survives that (CONTEXT.md), so this resets the anchor rather
+        than ending one record and starting another.  The count is the act's,
+        not the old vessel's — after a division the previous number describes
+        something that no longer exists, so an uncounted Replate leaves the
+        count unknown instead of carrying a stale one forward.
+        """
+        return replace(
+            self,
+            last_replated_at=now or utc_now_iso(),
+            plantlet_count=plantlet_count,
+            location=location,
+        )
+
+    def divided(
+        self,
+        *,
+        plantlet_count: int | None,
+        location: str,
+        now: str | None = None,
+    ) -> Culture:
+        """Return a new Culture split off this one by a Replate.
+
+        It starts now, on the same line and at the same Stage, and its anchor
+        is this Replate — a vessel that has just been plated is not due again
+        until its line's interval has run.
+        """
+        started_at = now or utc_now_iso()
+        return Culture(
+            id=new_culture_id(),
+            line_id=self.line_id,
+            stage=self.stage,
+            status=CultureStatus.ACTIVE,
+            started_at=started_at,
+            last_replated_at=started_at,
+            plantlet_count=plantlet_count,
+            location=location,
+        )
+
+    def ended(self, status: CultureStatus) -> Culture:
+        """Return this Culture ended, by Discard or by Graduation.
+
+        Nothing is deleted and no field is cleared: the vessel keeps its
+        counts, its location and its anchor, because the history of a line is
+        the vessels it ran through and a blanked record answers nothing.
+        """
+        return replace(self, status=status)
+
+    def moved_to_rooting(self) -> Culture:
+        """Return this Culture at the rooting Stage.
+
+        The anchor is deliberately untouched.  A stage move is not a plating —
+        the vessel is on the medium it was already on — so the Replate Due Date
+        shifts only because a different interval now applies to the same last
+        Replate.
+        """
+        return replace(self, stage=CultureStage.ROOTING)
+
     def to_dict(self) -> dict[str, Any]:
-        """Return the wire and storage representation."""
+        """Return the storage representation."""
         return {
             "id": self.id,
             "line_id": self.line_id,
@@ -289,6 +384,16 @@ class Culture:
             "plantlet_count": self.plantlet_count,
             "location": self.location,
         }
+
+    def to_payload(self, intervals: ReplateIntervals) -> dict[str, Any]:
+        """Return the wire representation — the vessel and when it is next due.
+
+        `replate_due_at` is derived and therefore travels on the wire without
+        ever being persisted: the interval it was computed from lives on the
+        line and can change, and a stored copy would outlive the number that
+        produced it.
+        """
+        return {**self.to_dict(), "replate_due_at": self.replate_due_at(intervals)}
 
 
 def _plantlet_count(value: Any) -> int | None:
@@ -405,5 +510,7 @@ class CultureLine:
         """
         return {
             **self.to_dict(),
-            "cultures": [culture.to_dict() for culture in cultures],
+            "cultures": [
+                culture.to_payload(self.replate_interval_days) for culture in cultures
+            ],
         }
