@@ -7,12 +7,14 @@ import pytest
 from custom_components.growspace_manager_tc.data_access.culture_repository import (
     CultureRepository,
 )
+from custom_components.growspace_manager_tc.models.common import (
+    TcConflictError,
+    TcNotFoundError,
+    TcValidationError,
+)
 from custom_components.growspace_manager_tc.models.culture_medium import (
     CultureMedium,
     MediumFormulation,
-    MediumNameConflictError,
-    MediumNotFoundError,
-    MediumValidationError,
 )
 
 A_FORMULATION: dict[str, Any] = {
@@ -79,7 +81,7 @@ def test_formulation_trims_and_defaults() -> None:
 )
 def test_formulation_rejects(overrides: dict[str, Any], message: str) -> None:
     """Every rejection names the field and says what is wrong with it."""
-    with pytest.raises(MediumValidationError, match=message.replace(".", r"\.")):
+    with pytest.raises(TcValidationError, match=message.replace(".", r"\.")):
         a_formulation(**overrides)
 
 
@@ -102,13 +104,13 @@ def test_formulation_rejects(overrides: dict[str, Any], message: str) -> None:
 )
 def test_formulation_has_limits(overrides: dict[str, Any], message: str) -> None:
     """Limits exist to catch a paste, not to have an opinion about recipes."""
-    with pytest.raises(MediumValidationError, match=message.replace(".", r"\.")):
+    with pytest.raises(TcValidationError, match=message.replace(".", r"\.")):
         a_formulation(**overrides)
 
 
 def test_a_component_cannot_be_listed_twice() -> None:
     """Two rows for one hormone are a typo, not two doses."""
-    with pytest.raises(MediumValidationError, match="twice"):
+    with pytest.raises(TcValidationError, match="twice"):
         a_formulation(
             hormones=[
                 {"name": "BAP", "amount": 1.0, "unit": "mg/L"},
@@ -119,7 +121,7 @@ def test_a_component_cannot_be_listed_twice() -> None:
 
 def test_pi_is_not_a_ph() -> None:
     """A number that is not finite is not a measurement."""
-    with pytest.raises(MediumValidationError, match="pH target must be a number"):
+    with pytest.raises(TcValidationError, match="pH target must be a number"):
         a_formulation(ph_target=float("nan"))
 
 
@@ -195,7 +197,7 @@ def test_a_medium_round_trips_through_the_store() -> None:
 @pytest.mark.parametrize("version", [0, -1, "2", True, None])
 def test_a_version_number_must_be_a_positive_integer(version: Any) -> None:
     """Versions are counted, and the count is what a Plating pins."""
-    with pytest.raises(MediumValidationError, match="positive integer"):
+    with pytest.raises(TcValidationError, match="positive integer"):
         CultureMedium.from_dict(
             "medium-1",
             {
@@ -214,7 +216,7 @@ def test_a_version_number_must_be_a_positive_integer(version: Any) -> None:
 
 def test_a_medium_needs_at_least_one_version() -> None:
     """A formulation-less medium is not a medium."""
-    with pytest.raises(MediumValidationError, match="at least one version"):
+    with pytest.raises(TcValidationError, match="at least one version"):
         CultureMedium.from_dict(
             "medium-1",
             {"name": "MS", "created_at": "2026-01-01T00:00:00+00:00", "versions": []},
@@ -242,7 +244,7 @@ def test_a_name_cannot_be_claimed_twice() -> None:
     repository = CultureRepository()
     repository.create_culture_medium("MS multiplication", a_formulation())
 
-    with pytest.raises(MediumNameConflictError, match="already exists"):
+    with pytest.raises(TcConflictError, match="already exists"):
         repository.create_culture_medium("ms MULTIPLICATION", a_formulation())
 
 
@@ -260,7 +262,7 @@ def test_a_medium_may_keep_its_own_name_while_being_edited() -> None:
 
 def test_updating_an_unknown_medium_is_not_found() -> None:
     """A stale card must not be able to resurrect a deleted medium."""
-    with pytest.raises(MediumNotFoundError):
+    with pytest.raises(TcNotFoundError):
         CultureRepository().update_culture_medium("nope", "MS", a_formulation())
 
 
@@ -272,7 +274,7 @@ def test_deleting_removes_the_medium_and_its_history() -> None:
     repository.delete_culture_medium(medium.id)
 
     assert repository.culture_media() == []
-    with pytest.raises(MediumNotFoundError):
+    with pytest.raises(TcNotFoundError):
         repository.delete_culture_medium(medium.id)
 
 
@@ -313,6 +315,9 @@ def test_an_unreadable_collection_is_kept_whole() -> None:
     repository.load({"culture_media": ["written", "by", "something", "else"]})
 
     assert repository.culture_media() == []
-    assert repository.as_dict() == {
-        "culture_media": ["written", "by", "something", "else"]
-    }
+    assert repository.as_dict()["culture_media"] == [
+        "written",
+        "by",
+        "something",
+        "else",
+    ]

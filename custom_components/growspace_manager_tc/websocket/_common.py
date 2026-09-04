@@ -23,21 +23,19 @@ from ..const import (
     WS_ERR_NOT_LOADED,
     WS_ERR_VALIDATION_FAILED,
 )
-from ..models.culture_medium import (
-    MediumNameConflictError,
-    MediumNotFoundError,
-    MediumValidationError,
-)
+from ..models.common import TcConflictError, TcNotFoundError, TcValidationError
 from ..storage_manager import StorageManager
 
 _LOGGER = logging.getLogger(__name__)
 
-# Ordered most specific first: `MediumNameConflictError` is a
-# `MediumValidationError`, and the card renders the two differently.
+# Ordered most specific first: `TcConflictError` is a `TcValidationError`, and
+# the card renders the two differently.  Three base types rather than a row per
+# collection: a model that raises the shared error reaches the card as the right
+# code without this table having to learn it exists.
 _ERROR_CODES: tuple[tuple[type[Exception], str], ...] = (
-    (MediumNameConflictError, WS_ERR_CONFLICT),
-    (MediumNotFoundError, WS_ERR_NOT_FOUND),
-    (MediumValidationError, WS_ERR_VALIDATION_FAILED),
+    (TcConflictError, WS_ERR_CONFLICT),
+    (TcNotFoundError, WS_ERR_NOT_FOUND),
+    (TcValidationError, WS_ERR_VALIDATION_FAILED),
 )
 
 TcPayloadHandler = Callable[

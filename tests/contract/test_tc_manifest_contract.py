@@ -14,6 +14,10 @@ from unittest.mock import patch
 
 import pytest
 
+from custom_components.growspace_manager_tc.models.culture_line import (
+    PhenotypeReference,
+    ReplateIntervals,
+)
 from custom_components.growspace_manager_tc.storage_manager import StorageManager
 from custom_components.growspace_manager_tc.websocket import async_build_manifest
 from homeassistant.core import HomeAssistant
@@ -32,16 +36,29 @@ REGENERATION_COMMAND = (
 # contract diff. `tests/test_websocket.py` proves the live value flows through.
 CONTRACT_INTEGRATION_VERSION = "0.1.0"
 
+# Pinned for the same reason the version is: the recording must not change
+# because it was taken on a different day.
+RECORDED_TIME = "2026-01-04T09:12:00+00:00"
+
 
 async def _build_contract_payload(hass: HomeAssistant) -> dict[str, object]:
-    """Return the manifest payload for an installation with recorded content."""
+    """Return the manifest payload for an installation with recorded content.
+
+    The collections are populated through the repository rather than by loading
+    hand-written rows, so the counts the card reads are counts of records this
+    version really decoded — a stub that stopped decoding would otherwise still
+    be counted, and the fixture would keep claiming an install that works.
+    """
     storage = StorageManager(hass)
-    storage.repository.load(
-        {
-            "culture_lines": {"line-1": {}, "line-2": {}},
-            "cultures": {"culture-1": {}},
-        }
-    )
+    for phenotype_id, name in (
+        ("Blue Dream|Pheno 2", "Blue Dream — Pheno 2"),
+        ("Gelato 33|Cut A", "Gelato 33 — Cut A"),
+    ):
+        storage.repository.introduce_culture_line(
+            PhenotypeReference.taken(phenotype_id, name, now=RECORDED_TIME),
+            ReplateIntervals.from_payload({"multiplication": 30, "rooting": 21}),
+            now=RECORDED_TIME,
+        )
 
     with patch(
         "custom_components.growspace_manager_tc.websocket.manifest.async_get_integration",

@@ -17,21 +17,23 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
-from math import isfinite
 from typing import Any, Final
-from uuid import uuid4
+
+from .common import (
+    TcValidationError,
+    new_id,
+    number as _number,
+    optional_text as _optional_text,
+    required_text as _required_text,
+    utc_now_iso,
+)
 
 __all__ = [
     "CultureMedium",
     "MediumComponent",
     "MediumFormulation",
-    "MediumNameConflictError",
-    "MediumNotFoundError",
-    "MediumValidationError",
     "MediumVersion",
     "new_medium_id",
-    "utc_now_iso",
     "validate_medium_name",
 ]
 
@@ -48,83 +50,14 @@ MIN_PH: Final = 3.0
 MAX_PH: Final = 9.0
 
 
-class MediumValidationError(ValueError):
-    """A Culture Medium payload the grower has to fix.
-
-    Its message is shown to the user, so it names the field and says what is
-    wrong with it.
-    """
-
-
-class MediumNameConflictError(MediumValidationError):
-    """A name another Culture Medium in the library already answers to.
-
-    A subclass because it is still the grower's form to fix, but a distinct type
-    because the card is told `conflict` rather than `validation_failed` — the
-    two lead to different UI.
-    """
-
-
-class MediumNotFoundError(LookupError):
-    """A Culture Medium ID that is not in the library."""
-
-
-def utc_now_iso() -> str:
-    """Return the current UTC instant as an ISO 8601 string."""
-    return datetime.now(UTC).isoformat()
-
-
 def new_medium_id() -> str:
     """Return an opaque identifier for a new Culture Medium."""
-    return uuid4().hex
-
-
-def _required_text(value: Any, field: str, limit: int) -> str:
-    """Return `value` as trimmed non-empty text, or raise."""
-    if not isinstance(value, str):
-        raise MediumValidationError(f"{field} must be text.")
-    text = value.strip()
-    if not text:
-        raise MediumValidationError(f"{field} is required.")
-    if len(text) > limit:
-        raise MediumValidationError(f"{field} must be at most {limit} characters.")
-    return text
-
-
-def _optional_text(value: Any, field: str, limit: int) -> str:
-    """Return `value` as trimmed text, defaulting to empty, or raise."""
-    if value is None:
-        return ""
-    if not isinstance(value, str):
-        raise MediumValidationError(f"{field} must be text.")
-    text = value.strip()
-    if len(text) > limit:
-        raise MediumValidationError(f"{field} must be at most {limit} characters.")
-    return text
+    return new_id()
 
 
 def validate_medium_name(value: Any) -> str:
     """Return a Culture Medium's name as it will be stored, or raise."""
     return _required_text(value, "Name", MAX_NAME_LENGTH)
-
-
-def _number(value: Any, field: str, minimum: float, maximum: float) -> float:
-    """Return `value` as a float inside its range, or raise.
-
-    `bool` is rejected explicitly: it is an `int` to Python, and a checkbox
-    reaching a concentration field is a bug worth naming rather than storing
-    as 1.0.
-    """
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise MediumValidationError(f"{field} must be a number.")
-    number = float(value)
-    if not isfinite(number):
-        raise MediumValidationError(f"{field} must be a number.")
-    if not minimum <= number <= maximum:
-        raise MediumValidationError(
-            f"{field} must be between {minimum:g} and {maximum:g}."
-        )
-    return number
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +77,7 @@ class MediumComponent:
     def from_payload(cls, payload: Any, field: str) -> MediumComponent:
         """Validate one entry from the wire or the store."""
         if not isinstance(payload, Mapping):
-            raise MediumValidationError(f"Each {field} entry must be an object.")
+            raise TcValidationError(f"Each {field} entry must be an object.")
         return cls(
             name=_required_text(payload.get("name"), f"{field} name", MAX_NAME_LENGTH),
             amount=_number(
@@ -163,18 +96,16 @@ def _components(payload: Any, field: str) -> tuple[MediumComponent, ...]:
     if payload is None:
         return ()
     if isinstance(payload, (str, bytes)) or not isinstance(payload, Sequence):
-        raise MediumValidationError(f"{field} must be a list.")
+        raise TcValidationError(f"{field} must be a list.")
     if len(payload) > MAX_COMPONENTS:
-        raise MediumValidationError(
-            f"{field} may hold at most {MAX_COMPONENTS} entries."
-        )
+        raise TcValidationError(f"{field} may hold at most {MAX_COMPONENTS} entries.")
 
     components = tuple(MediumComponent.from_payload(entry, field) for entry in payload)
     seen: set[str] = set()
     for component in components:
         key = component.name.casefold()
         if key in seen:
-            raise MediumValidationError(
+            raise TcValidationError(
                 f"{field} lists “{component.name}” twice; give it one entry."
             )
         seen.add(key)
@@ -247,7 +178,7 @@ class MediumVersion:
         """Decode a persisted version."""
         version = payload.get("version")
         if isinstance(version, bool) or not isinstance(version, int) or version < 1:
-            raise MediumValidationError("Version number must be a positive integer.")
+            raise TcValidationError("Version number must be a positive integer.")
         return cls(
             version=version,
             created_at=_required_text(payload.get("created_at"), "Created at", 64),
@@ -341,10 +272,10 @@ class CultureMedium:
         if not isinstance(raw_versions, Sequence) or isinstance(
             raw_versions, (str, bytes)
         ):
-            raise MediumValidationError("A medium must carry a list of versions.")
+            raise TcValidationError("A medium must carry a list of versions.")
         versions = tuple(MediumVersion.from_dict(entry) for entry in raw_versions)
         if not versions:
-            raise MediumValidationError("A medium must carry at least one version.")
+            raise TcValidationError("A medium must carry at least one version.")
 
         created_at = _required_text(payload.get("created_at"), "Created at", 64)
         return cls(
