@@ -24,7 +24,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
 from ..const import DOMAIN
-from ..models.maintenance import DiscardReason, MaintenanceActionType
+from ..models.maintenance import DiscardReason, MaintenanceAction, MaintenanceActionType
 from ..storage_manager import StorageManager
 from ._common import board_entry, tc_command
 
@@ -96,7 +96,7 @@ SCHEMA_WS_MAINTENANCE_HISTORY = websocket_api.BASE_COMMAND_MESSAGE_SCHEMA.extend
 )
 
 
-def _recorded(storage: StorageManager, action: Any) -> dict[str, Any]:
+def _recorded(storage: StorageManager, action: MaintenanceAction) -> dict[str, Any]:
     """Return the reply every act answers with: the line, and what was written."""
     return {
         "line": board_entry(storage, action.line_id),
