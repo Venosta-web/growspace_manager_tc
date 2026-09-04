@@ -1,0 +1,9 @@
+{
+  "collections": {
+    "culture_lines": 2,
+    "cultures": 1
+  },
+  "contract_version": 1,
+  "features": [],
+  "integration_version": "0.1.0"
+}

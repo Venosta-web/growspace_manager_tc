@@ -35,3 +35,17 @@ class CultureRepository:
     def as_dict(self) -> dict[str, Any]:
         """Return the collections as the payload to persist."""
         return dict(self._persisted)
+
+    def collection_sizes(self) -> dict[str, int]:
+        """Return how many records each persisted collection holds.
+
+        The manifest reports this, so the card can tell an empty install from a
+        populated one without fetching any of it.  Collections appear as the V1
+        model tickets land; anything persisted that is not a collection — a
+        schema marker, a scalar setting — is left out rather than counted.
+        """
+        return {
+            name: len(value)
+            for name, value in self._persisted.items()
+            if isinstance(value, (dict, list))
+        }

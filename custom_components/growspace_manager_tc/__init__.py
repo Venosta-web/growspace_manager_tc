@@ -12,6 +12,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, GROWSPACE_MANAGER_DOMAIN
 from .storage_manager import StorageManager
+from .websocket import async_register_commands
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -42,6 +43,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: GrowspaceTcConfigEntry) 
     await storage.async_load()
     entry.runtime_data = storage
 
+    # The namespace is registered here rather than in `async_setup` so that it
+    # exists exactly when an entry does: the card reads its absence as "TC is
+    # not installed", and Home Assistant only loads this integration at all
+    # once an entry exists.
+    async_register_commands(hass)
+
     _LOGGER.debug("Growspace Manager TC set up for entry %s", entry.entry_id)
     return True
 
@@ -53,5 +60,9 @@ async def async_unload_entry(
 
     There are no platforms or listeners to tear down yet; the storage manager
     holds nothing beyond the loaded records, which go with the entry.
+
+    The WebSocket namespace is deliberately left registered — Home Assistant
+    cannot unregister a command — and each handler refuses on its own once no
+    entry is loaded.
     """
     return True
