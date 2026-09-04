@@ -23,3 +23,21 @@ TC_CONTRACT_VERSION: Final = 1
 # never unregisters a WebSocket command, so a removed or unloaded integration
 # still answers — with this.
 WS_ERR_NOT_LOADED: Final = "not_loaded"
+
+# Error codes the card already understands, mirroring growspace_manager's
+# vocabulary (`services/utils.py`). `hass-call.ts` narrows any code outside that
+# set to `internal_error`, so a TC-only spelling would cost the card the ability
+# to tell a rejected form from a broken backend.
+WS_ERR_VALIDATION_FAILED: Final = "validation_failed"
+WS_ERR_NOT_FOUND: Final = "entity_not_found"
+WS_ERR_CONFLICT: Final = "conflict"
+
+# The persisted collection of Culture Media. "Media" unqualified is reserved in
+# Growspace Manager for substrate (see CONTEXT.md), so the key is spelled out
+# here and on the wire.
+COLLECTION_CULTURE_MEDIA: Final = "culture_media"
+
+# The manifest feature the card gates its medium library on. A release that
+# serves these commands names it; an older release installed under a newer card
+# does not, and the card renders no library rather than a broken one.
+FEATURE_CULTURE_MEDIA: Final = "culture_media"

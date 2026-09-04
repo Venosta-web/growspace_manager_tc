@@ -9,6 +9,13 @@ from __future__ import annotations
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
+from .culture_media import (
+    COMMANDS as CULTURE_MEDIA_COMMANDS,
+    WS_TYPE_CREATE_CULTURE_MEDIUM,
+    WS_TYPE_DELETE_CULTURE_MEDIUM,
+    WS_TYPE_LIST_CULTURE_MEDIA,
+    WS_TYPE_UPDATE_CULTURE_MEDIUM,
+)
 from .manifest import (
     MANIFEST_FEATURES,
     SCHEMA_WS_GET_MANIFEST,
@@ -20,7 +27,11 @@ from .manifest import (
 __all__ = [
     "MANIFEST_FEATURES",
     "SCHEMA_WS_GET_MANIFEST",
+    "WS_TYPE_CREATE_CULTURE_MEDIUM",
+    "WS_TYPE_DELETE_CULTURE_MEDIUM",
     "WS_TYPE_GET_MANIFEST",
+    "WS_TYPE_LIST_CULTURE_MEDIA",
+    "WS_TYPE_UPDATE_CULTURE_MEDIUM",
     "async_build_manifest",
     "async_register_commands",
     "websocket_get_manifest",
@@ -42,3 +53,5 @@ def async_register_commands(hass: HomeAssistant) -> None:
         websocket_get_manifest,
         SCHEMA_WS_GET_MANIFEST,
     )
+    for command_type, handler, schema in CULTURE_MEDIA_COMMANDS:
+        websocket_api.async_register_command(hass, command_type, handler, schema)

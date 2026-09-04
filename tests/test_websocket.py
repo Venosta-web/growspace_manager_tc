@@ -9,6 +9,7 @@ from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.growspace_manager_tc.const import (
     DOMAIN,
+    FEATURE_CULTURE_MEDIA,
     STORAGE_KEY,
     STORAGE_VERSION,
     TC_CONTRACT_VERSION,
@@ -67,8 +68,8 @@ async def test_manifest_reports_the_contract(
     assert response["result"] == {
         "contract_version": TC_CONTRACT_VERSION,
         "integration_version": installed_version,
-        "features": [],
-        "collections": {},
+        "features": [FEATURE_CULTURE_MEDIA],
+        "collections": {"culture_media": 0},
     }
 
 
@@ -94,7 +95,11 @@ async def test_manifest_counts_persisted_collections(
     response = await client.receive_json()
 
     assert response["success"]
-    assert response["result"]["collections"] == {"culture_lines": 2, "cultures": 0}
+    assert response["result"]["collections"] == {
+        "culture_lines": 2,
+        "cultures": 0,
+        "culture_media": 0,
+    }
 
 
 async def test_manifest_refuses_once_the_entry_is_unloaded(
