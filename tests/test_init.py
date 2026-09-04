@@ -67,7 +67,7 @@ async def test_setup_loads_persisted_records(
     """Whatever the store already holds is in the repository after setup."""
     hass_storage[STORAGE_KEY] = {
         "version": STORAGE_VERSION,
-        "data": {"culture_lines": {"line-1": {"name": "Blue Dream"}}},
+        "data": {"platings": {"plating-1": {"medium_version": 2}}},
     }
     entry = MockConfigEntry(domain=DOMAIN)
     entry.add_to_hass(hass)
@@ -77,6 +77,8 @@ async def test_setup_loads_persisted_records(
 
     storage: StorageManager = entry.runtime_data
     assert storage.repository.as_dict() == {
-        "culture_lines": {"line-1": {"name": "Blue Dream"}},
         "culture_media": {},
+        "culture_lines": {},
+        "cultures": {},
+        "platings": {"plating-1": {"medium_version": 2}},
     }

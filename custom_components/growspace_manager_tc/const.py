@@ -37,7 +37,17 @@ WS_ERR_CONFLICT: Final = "conflict"
 # here and on the wire.
 COLLECTION_CULTURE_MEDIA: Final = "culture_media"
 
+# The persisted collections of Culture Lines and their Cultures. Cultures are
+# their own collection rather than a list inside their line, so a Maintenance
+# Action can write one vessel without rewriting the lineage it belongs to.
+COLLECTION_CULTURE_LINES: Final = "culture_lines"
+COLLECTION_CULTURES: Final = "cultures"
+
 # The manifest feature the card gates its medium library on. A release that
 # serves these commands names it; an older release installed under a newer card
 # does not, and the card renders no library rather than a broken one.
 FEATURE_CULTURE_MEDIA: Final = "culture_media"
+
+# The manifest feature the card gates the culture board and the Introduction
+# form on, on the same terms.
+FEATURE_CULTURE_LINES: Final = "culture_lines"

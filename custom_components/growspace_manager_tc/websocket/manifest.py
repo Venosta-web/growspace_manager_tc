@@ -16,7 +16,12 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
-from ..const import DOMAIN, FEATURE_CULTURE_MEDIA, TC_CONTRACT_VERSION
+from ..const import (
+    DOMAIN,
+    FEATURE_CULTURE_LINES,
+    FEATURE_CULTURE_MEDIA,
+    TC_CONTRACT_VERSION,
+)
 from ..storage_manager import StorageManager
 from ._common import tc_command
 
@@ -31,7 +36,7 @@ SCHEMA_WS_GET_MANIFEST = websocket_api.BASE_COMMAND_MESSAGE_SCHEMA.extend(
 # as they land, and the card gates each surface on membership rather than on
 # `integration_version` — an installed version is not the same claim as a
 # working feature.
-MANIFEST_FEATURES: list[str] = [FEATURE_CULTURE_MEDIA]
+MANIFEST_FEATURES: list[str] = [FEATURE_CULTURE_MEDIA, FEATURE_CULTURE_LINES]
 
 
 async def async_build_manifest(

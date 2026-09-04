@@ -1,0 +1,85 @@
+{
+  "culture_lines": [
+    {
+      "archived_at": null,
+      "created_at": "2026-01-04T09:12:00+00:00",
+      "cultures": [
+        {
+          "id": "record-2",
+          "last_replated_at": "2026-01-04T09:12:00+00:00",
+          "line_id": "record-1",
+          "location": "Shelf A",
+          "plantlet_count": 6,
+          "stage": "multiplication",
+          "started_at": "2026-01-04T09:12:00+00:00",
+          "status": "active"
+        }
+      ],
+      "id": "record-1",
+      "phenotype": {
+        "id": "Blue Dream|Pheno 2",
+        "name_snapshot": "Blue Dream \u2014 Pheno 2",
+        "snapshot_at": "2026-01-04T09:12:00+00:00"
+      },
+      "replate_interval_days": {
+        "multiplication": 30,
+        "rooting": 21
+      },
+      "updated_at": "2026-01-04T09:12:00+00:00"
+    },
+    {
+      "archived_at": null,
+      "created_at": "2026-02-18T16:40:00+00:00",
+      "cultures": [
+        {
+          "id": "record-4",
+          "last_replated_at": "2026-02-18T16:40:00+00:00",
+          "line_id": "record-3",
+          "location": "",
+          "plantlet_count": null,
+          "stage": "rooting",
+          "started_at": "2026-02-18T16:40:00+00:00",
+          "status": "active"
+        }
+      ],
+      "id": "record-3",
+      "phenotype": {
+        "id": "Gelato 33|Cut B",
+        "name_snapshot": "Gelato 33 \u2014 Cut B",
+        "snapshot_at": "2026-03-30T08:05:00+00:00"
+      },
+      "replate_interval_days": {
+        "multiplication": 30,
+        "rooting": 21
+      },
+      "updated_at": "2026-03-30T08:05:00+00:00"
+    },
+    {
+      "archived_at": "2026-03-30T08:05:00+00:00",
+      "created_at": "2026-02-18T16:40:00+00:00",
+      "cultures": [
+        {
+          "id": "record-6",
+          "last_replated_at": "2026-02-18T16:40:00+00:00",
+          "line_id": "record-5",
+          "location": "",
+          "plantlet_count": null,
+          "stage": "multiplication",
+          "started_at": "2026-02-18T16:40:00+00:00",
+          "status": "active"
+        }
+      ],
+      "id": "record-5",
+      "phenotype": {
+        "id": "Zkittlez|Cut 4",
+        "name_snapshot": "Zkittlez \u2014 Cut 4",
+        "snapshot_at": "2026-01-04T09:12:00+00:00"
+      },
+      "replate_interval_days": {
+        "multiplication": 30,
+        "rooting": 21
+      },
+      "updated_at": "2026-03-30T08:05:00+00:00"
+    }
+  ]
+}
