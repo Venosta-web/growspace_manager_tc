@@ -77,5 +77,6 @@ async def test_setup_loads_persisted_records(
 
     storage: StorageManager = entry.runtime_data
     assert storage.repository.as_dict() == {
-        "culture_lines": {"line-1": {"name": "Blue Dream"}}
+        "culture_lines": {"line-1": {"name": "Blue Dream"}},
+        "culture_media": {},
     }

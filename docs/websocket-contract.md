@@ -50,6 +50,54 @@ feature says a surface is actually there to call. Gate a surface on `features`,
 never on `integration_version` — an installed release is not the claim that a
 feature works.
 
-`collections` is empty on a fresh install and gains a key per collection as the
-V1 model tickets land, so the card can distinguish "nothing set up yet" from
-"set up and empty" without fetching the records themselves.
+`collections` carries a key for every collection this release knows about,
+counting zero when nothing is stored in it — so the card can distinguish
+"nothing set up yet" from "set up and empty" without fetching the records
+themselves, and can tell both from a release that has never heard of the
+collection at all. Keys appear as the V1 model tickets land.
+
+## `growspace_manager_tc/culture_media/*`
+
+The Culture Medium library. A medium is a named lineage; a **Medium Version** is
+an immutable snapshot of its formulation, and every future Plating pins one
+(ADR-0004). Gated by the `culture_media` feature.
+
+| command                                     | parameters                       | result                        |
+| ------------------------------------------- | -------------------------------- | ----------------------------- |
+| `growspace_manager_tc/culture_media/list`   | —                                | `{ culture_media: Medium[] }` |
+| `growspace_manager_tc/culture_media/create` | name + formulation               | `{ medium: Medium }`          |
+| `growspace_manager_tc/culture_media/update` | `medium_id` + name + formulation | `{ medium: Medium }`          |
+| `growspace_manager_tc/culture_media/delete` | `medium_id`                      | `{ medium_id: string }`       |
+
+A `Medium` is `{ id, name, created_at, updated_at, current_version, versions }`.
+`versions` is ordered oldest first and only ever grows; `current_version` names
+the number a new Plating would pin, so the card never has to infer it from the
+ordering. Each version is `{ version, created_at }` plus the formulation, flat:
+`base_salts`, `additives[]`, `hormones[]`, `agar_g_per_l`, `sugar_g_per_l`,
+`ph_target`, `notes`. An additive or hormone entry is
+`{ name, amount, unit }` — the unit is free text, because hormones are dosed in
+mg/L by some growers and µM by others.
+
+The formulation travels flat on `create` and `update` too: one shape for the
+form, the reply and the stored snapshot.
+
+**`update` never rewrites a version.** It forks a new one when the formulation
+changed, and leaves the history alone when it did not — so re-saving an
+unchanged form adds nothing, and a rename adds nothing either. The name labels
+the lineage; what a Plating pins is the formulation.
+
+### Errors
+
+Value rules live in the models, not in the voluptuous schemas, so that a value
+the grower typed and a wrong type from the card do not arrive as the same error:
+
+| code                | when                                                             |
+| ------------------- | ---------------------------------------------------------------- |
+| `validation_failed` | a value the grower has to fix; the message names the field       |
+| `conflict`          | another medium already answers to that name (case-insensitively) |
+| `entity_not_found`  | no medium with that `medium_id`                                  |
+| `invalid_format`    | a wrong type on the wire — a card bug, from voluptuous           |
+| `not_loaded`        | no config entry is loaded                                        |
+
+The first three are spelled the way `growspace_manager` spells them, because
+`hass-call.ts` narrows any code outside that set to `internal_error`.
