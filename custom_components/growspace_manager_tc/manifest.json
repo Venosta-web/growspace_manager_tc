@@ -10,5 +10,5 @@
   "issue_tracker": "https://github.com/Venosta-web/growspace_manager_tc/issues",
   "loggers": ["custom_components.growspace_manager_tc"],
   "single_config_entry": true,
-  "version": "0.1.0"
+  "version": "1.0.0"
 }
