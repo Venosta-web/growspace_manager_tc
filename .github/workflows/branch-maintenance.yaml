@@ -41,6 +41,7 @@ jobs:
         inputs.dry_run || 'false' }}
       MERGED_GRACE_DAYS: ${{ inputs.merged_grace_days || '7' }}
       STALE_DAYS: ${{ inputs.stale_days || '180' }}
+      KEEP_BRANCHES: prerelease
       KEEP_PREFIXES: release/
     steps:
       - name: Check out the trusted default branch
