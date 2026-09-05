@@ -86,13 +86,15 @@ was hand-added to `configuration.yaml`.
   single-file content, so it is not the same failure — but the first TC release
   after this one is the moment to check it, the way
   `scripts/card-hacs-update` in the hub checks the card.
-- **A slow first paint of the TC card.** The card hides itself until its
-  `get_manifest` probe answers, and Home Assistant's `hui-card` re-reads that
-  hidden flag only when `hass` or the card config changes. On this quiet test
-  instance the card stayed collapsed after a reload until the next state
-  update, then appeared complete. On an instance with entities that actually
-  change this is invisible. It is card-side behaviour, not TC's, and it is
-  recorded here because it is what the acceptance run saw.
+- **That the TC card appears at all on an idle dashboard.** The card hides
+  itself until its `get_manifest` probe answers, and Home Assistant's
+  `hui-card` re-reads that hidden flag only when `hass` or the card config
+  changes. On this quiet test instance the card stayed collapsed after a
+  reload until the next state update, then appeared complete. On an instance
+  with entities that actually change this is invisible. It is card-side
+  behaviour rather than TC's, filed as
+  [workspace #146](https://github.com/Venosta-web/growspace_manager_workspace/issues/146),
+  and recorded here because it is what the acceptance run saw.
 
 ## Reproducing it
 
