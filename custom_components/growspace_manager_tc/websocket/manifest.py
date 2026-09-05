@@ -20,6 +20,7 @@ from ..const import (
     DOMAIN,
     FEATURE_CULTURE_LINES,
     FEATURE_CULTURE_MEDIA,
+    FEATURE_MAINTENANCE,
     TC_CONTRACT_VERSION,
 )
 from ..storage_manager import StorageManager
@@ -36,7 +37,11 @@ SCHEMA_WS_GET_MANIFEST = websocket_api.BASE_COMMAND_MESSAGE_SCHEMA.extend(
 # as they land, and the card gates each surface on membership rather than on
 # `integration_version` — an installed version is not the same claim as a
 # working feature.
-MANIFEST_FEATURES: list[str] = [FEATURE_CULTURE_MEDIA, FEATURE_CULTURE_LINES]
+MANIFEST_FEATURES: list[str] = [
+    FEATURE_CULTURE_MEDIA,
+    FEATURE_CULTURE_LINES,
+    FEATURE_MAINTENANCE,
+]
 
 
 async def async_build_manifest(

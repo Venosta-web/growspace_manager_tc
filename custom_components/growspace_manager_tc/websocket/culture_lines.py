@@ -22,7 +22,7 @@ from homeassistant.core import HomeAssistant
 from ..const import DOMAIN
 from ..models.culture_line import CultureStage, PhenotypeReference, ReplateIntervals
 from ..storage_manager import StorageManager
-from ._common import tc_command
+from ._common import board_entry, tc_command
 
 WS_TYPE_LIST_CULTURE_LINES = f"{DOMAIN}/culture_lines/list"
 WS_TYPE_INTRODUCE_CULTURE_LINE = f"{DOMAIN}/culture_lines/introduce"
@@ -73,13 +73,6 @@ SCHEMA_WS_SET_CULTURE_LINE_ARCHIVED = websocket_api.BASE_COMMAND_MESSAGE_SCHEMA.
 )
 
 
-def _board_entry(storage: StorageManager, line_id: str) -> dict[str, Any]:
-    """Return one line with its Cultures, the way the board reads it."""
-    repository = storage.repository
-    line = repository.culture_line(line_id)
-    return line.to_payload(repository.cultures_of(line_id))
-
-
 @tc_command
 async def websocket_list_culture_lines(
     hass: HomeAssistant, storage: StorageManager, msg: dict[str, Any]
@@ -119,7 +112,7 @@ async def websocket_introduce_culture_line(
         location=msg.get("location"),
     )
     await storage.async_save()
-    return {"line": _board_entry(storage, line.id)}
+    return {"line": board_entry(storage, line.id)}
 
 
 @tc_command
@@ -132,7 +125,7 @@ async def websocket_relink_phenotype(
         PhenotypeReference.taken(msg["phenotype_id"], msg["phenotype_name"]),
     )
     await storage.async_save()
-    return {"line": _board_entry(storage, line.id)}
+    return {"line": board_entry(storage, line.id)}
 
 
 @tc_command
@@ -142,7 +135,7 @@ async def websocket_set_culture_line_archived(
     """Put a line away, or bring it back. Nothing is deleted either way."""
     line = storage.repository.set_culture_line_archived(msg["line_id"], msg["archived"])
     await storage.async_save()
-    return {"line": _board_entry(storage, line.id)}
+    return {"line": board_entry(storage, line.id)}
 
 
 # The stage vocabulary is re-exported so the card's contract fixture and the

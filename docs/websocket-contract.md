@@ -186,3 +186,115 @@ The same vocabulary as the medium commands: `validation_failed` names the field
 the grower has to fix, `entity_not_found` answers an unknown `line_id`,
 `invalid_format` is voluptuous rejecting a wrong type from the card, and
 `not_loaded` means no config entry is loaded.
+
+## `growspace_manager_tc/maintenance/*`
+
+The daily loop. A **Maintenance Action** is one recorded act on one Culture from
+a closed vocabulary — Replate, Discard, note, move to rooting, Graduation — and
+the history it writes is **append-only**: nothing in this namespace edits or
+removes an act, because the Replate Due Date, the Plantlet Count series and the
+Plating trail behind a Pairing are all derived from it. A mistake is corrected
+by recording another act. Gated by the `maintenance` feature.
+
+| command                                            | parameters                                    | result                   |
+| -------------------------------------------------- | --------------------------------------------- | ------------------------ |
+| `growspace_manager_tc/maintenance/replate`         | `culture_id`, medium pin, `vessels[]`, `note` | `{ line: Line, action }` |
+| `growspace_manager_tc/maintenance/discard`         | `culture_id`, `reason`, `note`                | `{ line: Line, action }` |
+| `growspace_manager_tc/maintenance/note`            | `culture_id`, `note`                          | `{ line: Line, action }` |
+| `growspace_manager_tc/maintenance/move_to_rooting` | `culture_id`, `note`                          | `{ line: Line, action }` |
+| `growspace_manager_tc/maintenance/graduate`        | `culture_id`, `note`                          | `{ line: Line, action }` |
+| `growspace_manager_tc/maintenance/history`         | optional `culture_id` / `line_id`             | `{ actions: Action[] }`  |
+
+**Five commands rather than one taking an action type.** The acts do genuinely
+different things — one creates Cultures, two end one, one changes a Stage, one
+only observes — so a single command would either take a union of every field or
+validate none of them, and the card would have to know which combination belongs
+to which act anyway. Five commands put that knowledge where voluptuous can check
+it.
+
+**Every act answers with the whole board entry for the line**, not with the
+Culture it named: a Replate can divide one Culture into several, so the smallest
+honest unit of change is the line. The recorded act travels back beside it, so
+the card can show what it just wrote without re-reading the history.
+
+An `Action` is flat, with every field always present:
+`{ id, culture_id, line_id, action, recorded_at, note, medium_id,
+medium_version, vessels, reason, stage }`. The fields an act does not use are
+`null` or empty rather than absent — the card reads one schema, a persisted
+record decodes without knowing which act it is first, and a reader counting
+replates never has to guess whether a missing key means "not applicable" or "an
+older release did not write it". `line_id` is denormalized on purpose: a line's
+history has to stay readable after the vessels it happened in have ended.
+
+`action` is one of `replate`, `discard`, `note`, `move_to_rooting`, `graduate`.
+`reason` is one of `contamination`, `spent`, `mistake` — closed, because "how
+much of this line was lost to contamination" is a question the record set has to
+be able to answer; the note beside it carries whatever three words leave out.
+
+### Replate, and the division
+
+`replate` takes `medium_id` and `medium_version` — the Medium Version this
+placement pins (ADR-0004) — and `vessels`, a list of at least one
+`{ plantlet_count?, location? }`.
+
+**The first vessel is the Culture that was replated**: its identity survives the
+transfer, so its anchor and count move and its ID does not. Every further vessel
+is a new Culture on the same line at the same Stage. A plain transfer and a
+division are therefore the same command with a longer list: one dialog on the
+card, one shape in the history, and a per-vessel multiplication rate that is a
+subtraction rather than a reconstruction.
+
+Two defaults are worth stating because collapsing them would lose information.
+An **absent `location` inherits** the Culture's — a form that submits blank
+fields would otherwise wipe every shelf label on the board — while an empty
+string is the grower clearing it. An **absent `plantlet_count` leaves the count
+unknown** rather than carrying the old one forward: after a division the
+previous number describes something that no longer exists.
+
+The reply's `vessels` name the Cultures the act produced, in the same order, so
+the card can find the vessel it just created without diffing the board.
+
+### The Replate Due Date
+
+Every Culture in a `Line` payload carries `replate_due_at`: its
+`last_replated_at` plus the interval its line defines for its current Culture
+Stage. It is **derived and never persisted** — the interval lives on the line and
+can be edited, so a stored copy would outlive the number that produced it.
+
+It is `null` for a Culture that has ended: a discarded or graduated vessel is not
+overdue, it is over. It is `null` too when the anchor cannot be parsed, because
+a due date guessed from an unreadable stamp would be shown to the grower as a
+fact.
+
+**Overdue is the card's verdict, not a field.** TC states the date; whether it
+has passed depends on the clock at the moment of rendering, and a boolean
+computed when the payload was built would be stale the moment it sat in an atom.
+
+`move_to_rooting` changes the due date without touching the anchor: the vessel is
+still on the medium it was already on, and only the interval that applies to it
+has changed. It is refused on a Culture already in rooting, so a count of stage
+moves stays a count of stage moves.
+
+### The calendar
+
+One `calendar` entity per config entry carries the same due dates: one all-day
+event per Culture awaiting a Replate, named from the Phenotype Reference's
+snapshot — the only name this integration holds — and keyed by `uid` on the
+Culture. Overdue vessels stay on it as events whose day has gone, which is why
+V1 ships no overdue binary sensor: a second definition of overdue is one more
+than the honesty budget allows (docs/v1-scope.md). Archived lines are left off;
+a line put away is not work.
+
+### Errors
+
+The same vocabulary as everywhere in this namespace. `validation_failed` names
+the value the grower has to fix — an empty note, a vessel list that is empty or
+longer than 50, a reason outside the closed set, a Medium Version the medium
+does not have, or an act on a Culture that has already ended. `entity_not_found`
+answers an unknown `culture_id` or `medium_id`. `invalid_format` is voluptuous
+rejecting a wrong type from the card, and `not_loaded` means no config entry is
+loaded.
+
+**Every act refuses on a Culture that has ended**, and refuses with
+`validation_failed` rather than a not-found: the vessel exists, the board the
+grower is looking at is merely stale.

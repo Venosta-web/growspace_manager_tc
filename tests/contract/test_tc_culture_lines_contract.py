@@ -11,6 +11,13 @@ snapshot, the per-stage intervals, and an `archived_at` that is a stamp rather
 than a flag.  What it cannot hold is a Missing Phenotype — that state is the
 card's verdict after a client-side join against Growspace Manager's strain
 library (ADR-0002), and this repository has no way to produce or record it.
+
+The first line has been worked since, because `replate_due_at` has two honest
+values and a fixture showing only one would let the card declare the field
+non-nullable.  A Replate divides its vessel in two — both due, on the dates the
+multiplication interval puts them — and one of the halves is then discarded, so
+the recording carries an ended Culture whose due date is `null`: a discarded
+vessel is not overdue, it is over.
 """
 
 from __future__ import annotations
@@ -28,6 +35,9 @@ from custom_components.growspace_manager_tc.data_access.culture_repository impor
 from custom_components.growspace_manager_tc.models.culture_line import (
     PhenotypeReference,
     ReplateIntervals,
+)
+from custom_components.growspace_manager_tc.models.culture_medium import (
+    MediumFormulation,
 )
 
 FIXTURE_PATH = (
@@ -50,6 +60,15 @@ RECORDED_TIMES = [
     "2026-03-30T08:05:00+00:00",
 ]
 INTERVALS = {"multiplication": 30, "rooting": 21}
+FORMULATION = {
+    "base_salts": "MS full strength",
+    "additives": [],
+    "hormones": [{"name": "BAP", "amount": 1.0, "unit": "mg/L"}],
+    "agar_g_per_l": 7.0,
+    "sugar_g_per_l": 30.0,
+    "ph_target": 5.8,
+    "notes": "",
+}
 
 
 def _build_contract_payload() -> dict[str, object]:
@@ -57,11 +76,26 @@ def _build_contract_payload() -> dict[str, object]:
     ids = (f"record-{index}" for index in count(1))
     repository = CultureRepository()
 
-    with patch(
-        "custom_components.growspace_manager_tc.models.culture_line.new_id",
-        side_effect=lambda: next(ids),
+    with (
+        patch(
+            "custom_components.growspace_manager_tc.models.culture_line.new_id",
+            side_effect=lambda: next(ids),
+        ),
+        patch(
+            "custom_components.growspace_manager_tc.models.culture_medium.new_id",
+            side_effect=lambda: next(ids),
+        ),
+        patch(
+            "custom_components.growspace_manager_tc.models.maintenance.new_id",
+            side_effect=lambda: next(ids),
+        ),
     ):
-        repository.introduce_culture_line(
+        medium = repository.create_culture_medium(
+            "MS + BAP 1.0",
+            MediumFormulation.from_payload(FORMULATION),
+            now=RECORDED_TIMES[0],
+        )
+        worked, first_culture = repository.introduce_culture_line(
             PhenotypeReference.taken(
                 "Blue Dream|Pheno 2", "Blue Dream — Pheno 2", now=RECORDED_TIMES[0]
             ),
@@ -87,11 +121,40 @@ def _build_contract_payload() -> dict[str, object]:
         )
 
     # A re-link and an archive, so the fixture carries the two ways out of a
-    # Missing Phenotype rather than only the state that never went wrong.
-    with patch(
-        "custom_components.growspace_manager_tc.models.culture_line.utc_now_iso",
-        return_value=RECORDED_TIMES[2],
+    # Missing Phenotype rather than only the state that never went wrong; and a
+    # Replate and a Discard, so it carries both values `replate_due_at` takes.
+    with (
+        patch(
+            "custom_components.growspace_manager_tc.models.culture_line.utc_now_iso",
+            return_value=RECORDED_TIMES[2],
+        ),
+        patch(
+            "custom_components.growspace_manager_tc.models.culture_line.new_id",
+            side_effect=lambda: next(ids),
+        ),
+        patch(
+            "custom_components.growspace_manager_tc.models.maintenance.utc_now_iso",
+            return_value=RECORDED_TIMES[2],
+        ),
+        patch(
+            "custom_components.growspace_manager_tc.models.maintenance.new_id",
+            side_effect=lambda: next(ids),
+        ),
     ):
+        replate = repository.replate_culture(
+            first_culture.id,
+            medium.id,
+            medium.current_version.version,
+            [
+                {"plantlet_count": 5, "location": "Shelf A"},
+                {"plantlet_count": 4, "location": "Shelf B"},
+            ],
+            now=RECORDED_TIMES[1],
+        )
+        repository.discard_culture(
+            replate.vessels[1].culture_id, "contamination", now=RECORDED_TIMES[2]
+        )
+
         repository.relink_phenotype(
             relinked.id,
             PhenotypeReference.taken(
@@ -100,6 +163,7 @@ def _build_contract_payload() -> dict[str, object]:
         )
         repository.set_culture_line_archived(archived.id, True)
 
+    assert worked.id
     return {
         "culture_lines": [
             line.to_payload(repository.cultures_of(line.id))

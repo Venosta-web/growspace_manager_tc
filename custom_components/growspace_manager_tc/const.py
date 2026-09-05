@@ -51,3 +51,21 @@ FEATURE_CULTURE_MEDIA: Final = "culture_media"
 # The manifest feature the card gates the culture board and the Introduction
 # form on, on the same terms.
 FEATURE_CULTURE_LINES: Final = "culture_lines"
+
+# The persisted, append-only collection of Maintenance Actions. Every act on a
+# Culture is a row here and none of them is ever edited or removed — the closed
+# vocabulary plus an immutable history is what makes the Replate Due Date, the
+# Plantlet Count series and the Plating trail computable rather than anecdotal.
+COLLECTION_MAINTENANCE_ACTIONS: Final = "maintenance_actions"
+
+# The manifest feature the card gates the Maintenance Action dialogs and the
+# due/overdue worklist on. The worklist reads `replate_due_at`, which a release
+# that predates this feature does not send — so a card gating the worklist on
+# `culture_lines` alone would render a board of vessels with no due date at all.
+FEATURE_MAINTENANCE: Final = "maintenance"
+
+# Sent whenever the repository has been written back to the store. The calendar
+# entity recomputes from the repository rather than holding its own copy, so one
+# signal after every save is all it needs — and dispatching it from the single
+# place that saves is what stops a new command forgetting to.
+SIGNAL_TC_UPDATED: Final = f"{DOMAIN}_updated"

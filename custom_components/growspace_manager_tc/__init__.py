@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
@@ -15,6 +16,12 @@ from .storage_manager import StorageManager
 from .websocket import async_register_commands
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+# The calendar is the integration's only entity: one per entry, carrying the
+# Replate Due Dates. Everything else this integration serves is a WebSocket
+# command, because the card is the surface and an entity per Culture would put
+# a grower's whole bench into the state machine for nothing.
+PLATFORMS: list[Platform] = [Platform.CALENDAR]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: GrowspaceTcConfigEntry) 
     # once an entry exists.
     async_register_commands(hass)
 
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
     _LOGGER.debug("Growspace Manager TC set up for entry %s", entry.entry_id)
     return True
 
@@ -58,11 +67,11 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry.
 
-    There are no platforms or listeners to tear down yet; the storage manager
-    holds nothing beyond the loaded records, which go with the entry.
+    The calendar goes with the entry; the storage manager holds nothing beyond
+    the loaded records, which go with it too.
 
     The WebSocket namespace is deliberately left registered — Home Assistant
     cannot unregister a command — and each handler refuses on its own once no
     entry is loaded.
     """
-    return True
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

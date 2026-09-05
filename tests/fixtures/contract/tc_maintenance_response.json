@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "action": "discard",
+      "culture_id": "record-4",
+      "id": "record-9",
+      "line_id": "record-2",
+      "medium_id": null,
+      "medium_version": null,
+      "note": "Bacterial haze.",
+      "reason": "contamination",
+      "recorded_at": "2026-03-30T08:05:00+00:00",
+      "stage": null,
+      "vessels": []
+    },
+    {
+      "action": "graduate",
+      "culture_id": "record-3",
+      "id": "record-8",
+      "line_id": "record-2",
+      "medium_id": null,
+      "medium_version": null,
+      "note": "Out to the humidity dome.",
+      "reason": null,
+      "recorded_at": "2026-03-30T08:05:00+00:00",
+      "stage": null,
+      "vessels": []
+    },
+    {
+      "action": "move_to_rooting",
+      "culture_id": "record-3",
+      "id": "record-7",
+      "line_id": "record-2",
+      "medium_id": null,
+      "medium_version": null,
+      "note": "",
+      "reason": null,
+      "recorded_at": "2026-03-17T14:35:00+00:00",
+      "stage": "rooting",
+      "vessels": []
+    },
+    {
+      "action": "note",
+      "culture_id": "record-3",
+      "id": "record-6",
+      "line_id": "record-2",
+      "medium_id": null,
+      "medium_version": null,
+      "note": "Slight vitrification on two plantlets.",
+      "reason": null,
+      "recorded_at": "2026-02-24T11:00:00+00:00",
+      "stage": null,
+      "vessels": []
+    },
+    {
+      "action": "replate",
+      "culture_id": "record-3",
+      "id": "record-5",
+      "line_id": "record-2",
+      "medium_id": "record-1",
+      "medium_version": 1,
+      "note": "Divided the healthy half.",
+      "reason": null,
+      "recorded_at": "2026-02-03T09:20:00+00:00",
+      "stage": null,
+      "vessels": [
+        {
+          "culture_id": "record-3",
+          "location": "Shelf A",
+          "plantlet_count": 5
+        },
+        {
+          "culture_id": "record-4",
+          "location": "Shelf B",
+          "plantlet_count": 4
+        }
+      ]
+    }
+  ]
+}
