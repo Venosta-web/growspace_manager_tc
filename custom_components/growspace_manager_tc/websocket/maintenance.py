@@ -178,11 +178,9 @@ async def websocket_move_to_rooting(
     return _recorded(storage, action)
 
 
-def _plant_id(response: Any) -> str:
+def _plant_id(response: dict[str, Any] | None) -> str:
     """Validate the optional public service response before completing the link."""
-    if not isinstance(response, dict):
-        raise TypeError("add_plant returned no plant identity")
-    return required_text(response.get("plant_id"), "Plant", 64)
+    return required_text(response.get("plant_id") if response else None, "Plant", 64)
 
 
 @tc_command
