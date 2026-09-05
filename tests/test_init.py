@@ -81,5 +81,6 @@ async def test_setup_loads_persisted_records(
         "culture_lines": {},
         "cultures": {},
         "maintenance_actions": {},
+        "pairings": {},
         "platings": {"plating-1": {"medium_version": 2}},
     }

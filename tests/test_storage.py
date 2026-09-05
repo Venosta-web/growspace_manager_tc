@@ -18,6 +18,7 @@ EMPTY: dict[str, Any] = {
     "culture_lines": {},
     "cultures": {},
     "maintenance_actions": {},
+    "pairings": {},
 }
 
 

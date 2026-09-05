@@ -298,3 +298,30 @@ loaded.
 **Every act refuses on a Culture that has ended**, and refuses with
 `validation_failed` rather than a not-found: the vessel exists, the board the
 grower is looking at is merely stale.
+
+## Curated pairings
+
+A Pairing endorses one phenotype on one Culture Medium, across all of that
+medium's versions. Growers can add notes and browse the same records by medium
+or by phenotype in the card. There are no derived performance statistics.
+
+The `pairings` manifest capability exposes these WebSocket commands:
+
+| Command under `growspace_manager_tc/` | Request                                                         | Result           |
+| ------------------------------------- | --------------------------------------------------------------- | ---------------- |
+| `pairings/list`                       | No fields                                                       | `pairings` array |
+| `pairings/create`                     | `phenotype_id`, `phenotype_name`, `medium_id`, optional `notes` | `pairing`        |
+| `pairings/update`                     | `pairing_id` plus the create fields                             | `pairing`        |
+| `pairings/delete`                     | `pairing_id`                                                    | `pairing_id`     |
+
+The phenotype ID remains opaque; its name is snapshotted so deleted phenotypes
+stay visible and can be repaired by editing the pairing. Updating replaces the
+pairing's fields while retaining its ID and creation timestamp. Notes are
+trimmed and limited to 4,000 characters; omitting notes clears them. Duplicate
+phenotype–medium combinations return `conflict`, including on update. Unknown
+medium or pairing IDs return `entity_not_found`. Delete a medium's pairings
+before deleting the medium itself.
+
+The producer-verified wire fixture is
+[`tc_pairings_response.json`](../tests/fixtures/contract/tc_pairings_response.json).
+Land this contract before the card change that consumes it.

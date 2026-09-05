@@ -12,11 +12,15 @@ from ..const import (
     COLLECTION_CULTURE_MEDIA,
     COLLECTION_CULTURES,
     COLLECTION_MAINTENANCE_ACTIONS,
+    COLLECTION_PAIRINGS,
 )
 from ..models.common import (
     TcConflictError,
     TcNotFoundError,
     TcValidationError,
+    new_id,
+    optional_text,
+    required_text,
     utc_now_iso,
     whole_number,
 )
@@ -39,6 +43,7 @@ from ..models.maintenance import (
     requested_vessels,
     required_note_text,
 )
+from ..models.pairing import Pairing
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,7 +127,7 @@ class CultureRepository:
 
     Maintenance Actions are a third collection, and an append-only one: this
     class writes rows into it and has no method that edits or removes one.  The
-    remaining V1 model ticket adds the collection still missing — pairings.
+    pairings collection holds curated phenotype–medium endorsements.
     Anything persisted that this version does not decode is kept verbatim and
     written back untouched.
     """
@@ -134,6 +139,7 @@ class CultureRepository:
         self._lines = _Collection[CultureLine](COLLECTION_CULTURE_LINES)
         self._cultures = _Collection[Culture](COLLECTION_CULTURES)
         self._actions = _Collection[MaintenanceAction](COLLECTION_MAINTENANCE_ACTIONS)
+        self._pairings = _Collection[Pairing](COLLECTION_PAIRINGS)
 
     # -- persistence ------------------------------------------------------
 
@@ -160,6 +166,11 @@ class CultureRepository:
         self._keep_unindexable(
             self._actions,
             self._actions.load(raw[self._actions.name], MaintenanceAction.from_dict),
+        )
+
+        self._keep_unindexable(
+            self._pairings,
+            self._pairings.load(raw[self._pairings.name], Pairing.from_dict),
         )
 
     def _keep_unindexable(self, collection: _Collection[Any], raw: Any) -> None:
@@ -193,7 +204,7 @@ class CultureRepository:
 
     @property
     def _collections(self) -> tuple[_Collection[Any], ...]:
-        return (self._media, self._lines, self._cultures, self._actions)
+        return (self._media, self._lines, self._cultures, self._actions, self._pairings)
 
     # -- culture media ----------------------------------------------------
 
@@ -245,6 +256,10 @@ class CultureRepository:
         pinned would destroy the very record ADR-0004 exists to keep readable.
         """
         medium = self.culture_medium(medium_id)
+        if any(pairing.medium_id == medium_id for pairing in self.pairings()):
+            raise TcConflictError(
+                "Remove this culture medium's pairings before deleting it."
+            )
         del self._media.records[medium_id]
         return medium
 
@@ -590,6 +605,72 @@ class CultureRepository:
         self._actions.records[action.id] = action
         self._actions.claim()
         return action
+
+    # -- curated pairings -------------------------------------------------
+
+    def pairings(self) -> list[Pairing]:
+        """Return the single pairing set; both editor views project this list."""
+        return sorted(self._pairings.records.values(), key=lambda row: row.id)
+
+    def pairing(self, pairing_id: str) -> Pairing:
+        """Return one endorsement or report a missing record."""
+        pairing = self._pairings.records.get(pairing_id)
+        if pairing is None:
+            raise TcNotFoundError(f"No pairing with ID {pairing_id}.")
+        return pairing
+
+    def save_pairing(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        pairing_id: str | None = None,
+        now: str | None = None,
+    ) -> Pairing:
+        """Create or replace an endorsement, validating before any mutation.
+
+        Updating can repair a missing phenotype or change the medium. The
+        association remains unique even when its identity fields change.
+        """
+        current = self.pairing(pairing_id) if pairing_id is not None else None
+        stamp = now or utc_now_iso()
+        phenotype = PhenotypeReference.taken(
+            payload.get("phenotype_id"), payload.get("phenotype_name"), now=stamp
+        )
+        medium_id = required_text(payload.get("medium_id"), "Culture medium", 64)
+        self.culture_medium(medium_id)
+        notes = optional_text(payload.get("notes"), "Notes", 4000)
+        for row in self.pairings():
+            if (
+                row.id != pairing_id
+                and row.phenotype.id == phenotype.id
+                and row.medium_id == medium_id
+            ):
+                raise TcConflictError(
+                    "This phenotype already has a pairing with this culture medium."
+                )
+        pairing = Pairing(
+            id=current.id if current else new_id(),
+            phenotype=(
+                current.phenotype
+                if current
+                and current.phenotype.id == phenotype.id
+                and current.phenotype.name_snapshot == phenotype.name_snapshot
+                else phenotype
+            ),
+            medium_id=medium_id,
+            notes=notes,
+            created_at=current.created_at if current else stamp,
+            updated_at=stamp,
+        )
+        self._pairings.records[pairing.id] = pairing
+        self._pairings.claim()
+        return pairing
+
+    def delete_pairing(self, pairing_id: str) -> Pairing:
+        """Remove an endorsement without changing either referenced entity."""
+        pairing = self.pairing(pairing_id)
+        del self._pairings.records[pairing_id]
+        return pairing
 
 
 def _discard_reason(value: Any) -> DiscardReason:

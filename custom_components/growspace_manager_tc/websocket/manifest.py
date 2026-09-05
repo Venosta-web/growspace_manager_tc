@@ -21,6 +21,7 @@ from ..const import (
     FEATURE_CULTURE_LINES,
     FEATURE_CULTURE_MEDIA,
     FEATURE_MAINTENANCE,
+    FEATURE_PAIRINGS,
     TC_CONTRACT_VERSION,
 )
 from ..storage_manager import StorageManager
@@ -41,6 +42,7 @@ MANIFEST_FEATURES: list[str] = [
     FEATURE_CULTURE_MEDIA,
     FEATURE_CULTURE_LINES,
     FEATURE_MAINTENANCE,
+    FEATURE_PAIRINGS,
 ]
 
 

@@ -69,3 +69,6 @@ FEATURE_MAINTENANCE: Final = "maintenance"
 # signal after every save is all it needs — and dispatching it from the single
 # place that saves is what stops a new command forgetting to.
 SIGNAL_TC_UPDATED: Final = f"{DOMAIN}_updated"
+
+COLLECTION_PAIRINGS: Final = "pairings"
+FEATURE_PAIRINGS: Final = "pairings"

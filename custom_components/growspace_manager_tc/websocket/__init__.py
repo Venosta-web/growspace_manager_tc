@@ -41,6 +41,7 @@ from .manifest import (
     async_build_manifest,
     websocket_get_manifest,
 )
+from .pairings import COMMANDS as PAIRING_COMMANDS
 
 __all__ = [
     "DISCARD_REASONS",
@@ -87,5 +88,6 @@ def async_register_commands(hass: HomeAssistant) -> None:
         *CULTURE_MEDIA_COMMANDS,
         *CULTURE_LINE_COMMANDS,
         *MAINTENANCE_COMMANDS,
+        *PAIRING_COMMANDS,
     ):
         websocket_api.async_register_command(hass, command_type, handler, schema)
