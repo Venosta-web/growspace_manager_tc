@@ -37,6 +37,10 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-          # Brand images ship in custom_components/growspace_manager_tc/brand
-          # (supported since HA 2026.3); no remote brands entry is needed.
+          # Brand images ship in custom_components/growspace_manager_tc/brand,
+          # which Home Assistant's own `brands` component has served for custom
+          # integrations since core 2026.3 — it reads that directory before it
+          # asks the CDN. The HACS check only ever asks the home-assistant/brands
+          # repository, where a local set does not appear and is not meant to,
+          # so this is ignored on purpose rather than pending a submission.
           ignore: brands

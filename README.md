@@ -1,111 +1,141 @@
 # Growspace Manager TC
 
-![Growspace Manager](custom_components/growspace_manager_tc/brand/logo.png)
-
+[![Lint](https://github.com/Venosta-web/growspace_manager_tc/actions/workflows/lint.yaml/badge.svg)](https://github.com/Venosta-web/growspace_manager_tc/actions/workflows/lint.yaml)
 [![Tests](https://github.com/Venosta-web/growspace_manager_tc/actions/workflows/tests.yaml/badge.svg)](https://github.com/Venosta-web/growspace_manager_tc/actions/workflows/tests.yaml)
 [![HACS/HASS](https://github.com/Venosta-web/growspace_manager_tc/actions/workflows/validate.yaml/badge.svg)](https://github.com/Venosta-web/growspace_manager_tc/actions/workflows/validate.yaml)
+[![codecov](https://codecov.io/gh/Venosta-web/growspace_manager_tc/graph/badge.svg)](https://codecov.io/gh/Venosta-web/growspace_manager_tc)
 
 The optional tissue-culture companion to
-[Growspace Manager](https://github.com/Venosta-web/growspace_manager).
-Preserve phenotypes in Culture Lines, follow the replate worklist, keep a
-versioned Culture Medium library, curate pairings, and graduate Cultures back
-into Growspace Manager plants.
+[Growspace Manager](https://github.com/Venosta-web/growspace_manager). Keep a
+phenotype alive in Culture Lines, work the replate list the way you would work
+a bench, hold your Culture Medium recipes with their history intact, record
+which phenotype does well on which medium, and hand a rooted vessel back to
+Growspace Manager as a plant.
 
 ## Requirements
 
 - Home Assistant **2026.8.1 or newer** and HACS **2.0.5 or newer**.
 - **Growspace Manager installed, configured, and loaded** in the same Home
-  Assistant instance. TC references the phenotypes in its strain library;
-  Growspace Manager owns their identity. TC cannot run on its own.
-- The [Growspace Manager card](https://github.com/Venosta-web/lovelace-growspace-manager-card)
-  with the TC view, including the graduation bridge from workspace issue #118.
-  During the V1 rollout this may require enabling prereleases in HACS.
-  The integration does not install the card automatically.
+  Assistant instance. TC borrows the phenotypes in its strain library and never
+  owns them, so it does not run on its own: setup refuses with an explanation
+  when Growspace Manager is not there, and waits for it if it goes away later.
+- The [Growspace Manager card](https://github.com/Venosta-web/lovelace-growspace-manager-card),
+  **v1.3.0-next.59 or later**, which carries the TC view. That is a prerelease,
+  so turn prereleases on for it in HACS. TC does not install the card for you,
+  and the card is where the whole TC surface lives — the integration serves one
+  calendar entity and nothing else.
 
 ## Install through HACS
 
-1. Install and configure Growspace Manager first. Add a phenotype to its
-   strain library and a growspace with an empty position for graduation.
-2. In HACS, open the three-dot menu, then **Custom repositories**. Add
-   `https://github.com/Venosta-web/growspace_manager_tc` with type **Integration**.
+1. **Install and configure Growspace Manager first**, and give it something to
+   work with: one phenotype in its strain library, and a growspace with a free
+   position for a graduated culture to land in.
+2. In HACS, open the three-dot menu and choose **Custom repositories**. Add
+   `https://github.com/Venosta-web/growspace_manager_tc` with the category
+   **Integration**.
 3. Find **Growspace Manager TC**, download it, and restart Home Assistant.
-   Before the first GitHub release is published, HACS offers the `main` branch.
-   After publication, select the release whose changes you want from the
+   Until the first GitHub release is published HACS offers the `main` branch,
+   which is what you want; afterwards pick the release you want from the
    [changelog](CHANGELOG.md).
-4. Open **Settings → Devices & services → Add integration**, search for
-   **Growspace Manager TC**, and complete setup. Only one TC entry is supported.
-5. Install or update the Growspace Manager card through HACS, add it to a
-   dashboard, then open its **TC** view. TC appears when its integration is loaded.
+4. Go to **Settings → Devices & services → Add integration** and add
+   **Growspace Manager TC**. There is nothing to fill in, and one entry is all
+   the integration supports.
+5. Download or update the Growspace Manager card through HACS, then put its TC
+   card on a dashboard. It takes no options, so the manual card editor is
+   enough:
 
-No YAML configuration, separate dashboard card, or cloud account is required
-for TC. HACS uses GitHub for installation and updates; TC runs locally.
+   ```yaml
+   type: custom:growspace-tc-card
+   ```
 
-To update, download the desired version in HACS and restart Home Assistant.
-Keep Growspace Manager and the card compatible with the TC version in use.
+   The TC view ships inside that one card package as a chunk it fetches only
+   when it finds TC running — there is no second frontend repository to add,
+   and on an instance without TC the card renders nothing at all.
+
+TC needs no YAML, no cloud account, and no key. HACS talks to GitHub to install
+and update it; everything the integration itself does is local. To update,
+download the version you want in HACS and restart — and keep Growspace Manager
+and the card on versions that match, since the three move together.
 
 ## Your first culture loop
 
-1. **Introduce a line.** Select a phenotype from Growspace Manager, choose
-   multiplication or rooting, and set the replate interval for each stage.
-   Optionally record the Plantlet Count and a free-text Location. Introduction
-   creates the line and its first Culture.
-2. **Prepare a Culture Medium.** In the medium library, name the formulation
-   and record its base salts, additives, hormones, agar, sugar, and target pH.
-   Changing a formulation creates an immutable Medium Version.
-3. **Work from the worklist.** The TC view opens on due and overdue replating.
-   Replate a Culture onto a selected Medium Version, recording Plantlet Counts
-   and Locations for the resulting vessels. One vessel continues the Culture;
-   additional vessels create new Cultures in the same line.
-4. **Record maintenance.** Add notes, move a Culture to rooting, or discard it
-   with a reason. Ended Cultures and their action history remain available.
-   Replating resets the due-date anchor; moving to rooting applies the rooting
-   interval to the existing anchor. Until the first Replate, Introduction is
-   the anchor.
-5. **Curate pairings.** Endorse a phenotype–Culture Medium combination with
-   notes. The phenotype and medium views show the same pairing set. A Pairing
-   endorses the medium across versions; each Replate pins the version used.
-6. **Graduate.** End a Culture and optionally create a plant in Growspace
-   Manager by selecting its destination and genetics. The plant enters as a
-   clone for later vegetative growth, and the graduation record links its ID.
-   Opting out or a failed bridge still saves the graduation. If the plant link
-   is missing, inspect Growspace Manager before adding a plant manually: a
-   remote call can fail after creating one, so TC does not retry it.
+1. **Introduce a line.** Pick a phenotype from Growspace Manager, say whether
+   the first vessel is in multiplication or rooting, and set the replate
+   interval for each stage. Record the Plantlet Count and a Location if you
+   keep them. Introduction creates the Culture Line and its first Culture in
+   one act.
+2. **Prepare a Culture Medium.** Name the formulation and record its base
+   salts, additives, hormones, agar, sugar and target pH. Editing it never
+   rewrites what came before: each change forks a new, immutable Medium
+   Version, so a Replate from last month still points at the recipe it
+   actually used.
+3. **Work from the worklist.** The TC card opens on what is due and what is
+   overdue. Replate a Culture onto a chosen Medium Version and record the
+   Plantlet Count and Location of every vessel that comes out of it. One vessel
+   carries the Culture forward; the rest become new Cultures in the same line.
+4. **Record what happens between replates.** Add a note, move a Culture to
+   rooting, or discard it with a reason. Nothing is deleted — an ended Culture
+   and its history stay readable. A Replate moves the due-date anchor; moving
+   to rooting leaves the anchor alone and only changes which interval applies
+   to it. Before the first Replate, the Introduction is the anchor.
+5. **Curate pairings.** Endorse a phenotype and a Culture Medium together, with
+   your notes. The by-medium and by-phenotype views are two readings of the
+   same set, not two lists to keep in step. A Pairing endorses the medium
+   across all its versions; pinning a version is what a Replate does.
+6. **Graduate.** End a Culture, and optionally create the plant in Growspace
+   Manager at the same time by choosing its destination and genetics. It enters
+   as a clone, and the graduation record keeps the plant's ID. Declining the
+   plant, or a call that fails, still leaves the graduation recorded — the
+   Culture has ended either way and nothing is lost. If the link is missing,
+   look in Growspace Manager before adding a plant by hand: a call can fail
+   after creating one, so TC does not retry it for you.
 
-## Calendar, history, and recovery
+## The calendar, missing phenotypes, and your data
 
-TC creates one calendar entity per integration entry for replate due dates.
-Use it in Home Assistant calendars and automations. Overdue work is shown in
-that calendar and the card; there are no separate overdue alert entities.
+TC adds **one calendar entity** per config entry, carrying the Replate Due Date
+of every live vessel. Use it in the calendar panel or as an automation trigger.
+Overdue work shows there and on the card; there are deliberately no separate
+overdue alert entities to disagree with it.
 
-A removed phenotype stays visible under its saved name. Re-link the Culture
-Line to an existing phenotype or archive it. TC never deletes a line because
-its phenotype is missing.
+A phenotype removed from Growspace Manager does not take its Culture Line with
+it. The line stays visible under the name TC snapshotted, and you can either
+re-link it to another phenotype or archive it. TC never deletes a line because
+the thing it referred to went away.
 
-TC stores its records locally in Home Assistant's `.storage` directory.
-Include the configuration directory in your normal Home Assistant backups;
-do not edit the store while Home Assistant is running.
+Records live in Home Assistant's `.storage` directory, so they are already in
+your normal Home Assistant backups. Do not edit the store while Home Assistant
+is running.
 
-If setup says Growspace Manager is missing, check that its integration is
-loaded, not merely downloaded in HACS. If it becomes unavailable after TC has
-been configured, TC waits for it to return. If TC is absent from the card,
-check the integration's setup state, update the card, and reload the dashboard.
+If setup says Growspace Manager is missing, check that it is actually _loaded_
+and not merely downloaded in HACS — HACS installing files and Home Assistant
+setting an integration up are two different things. If TC is missing from the
+card, check that its entry is loaded, that the card is new enough, and reload
+the dashboard.
 
 ## V1 boundaries
 
-V1 includes Culture Lines and Cultures, five Maintenance Actions, stage-based
-replate dates, one calendar, Plantlet Counts, free-text Locations, immutable
-Medium Versions, curated Pairings, and optional graduation into a plant.
+V1 is Culture Lines and Cultures, the five Maintenance Actions, stage-based
+Replate Due Dates, one calendar, Plantlet Counts, free-text Locations,
+immutable Medium Versions, curated Pairings, and the optional graduation into a
+plant.
 
-Derived statistics, TC import/export, overdue alert or binary-sensor entities,
-and structured location hierarchies are outside V1. See the
-[scope](docs/v1-scope.md), [WebSocket contract](docs/websocket-contract.md), and
-[release verification](docs/release-readiness.md).
+Derived pairing statistics, TC import/export, overdue alert or binary sensor
+entities, and a structured location hierarchy are **not** in V1 — each for a
+reason recorded in the [scope](docs/v1-scope.md). The
+[WebSocket contract](docs/websocket-contract.md) is the surface the card talks
+to, and [release verification](docs/release-readiness.md) is how the HACS
+install of this version was checked.
 
 ## Development and branding
 
-See [AGENTS.md](AGENTS.md) for the isolated worktree and validation commands,
-[CONTEXT.md](CONTEXT.md) for terminology, and [ADRs](docs/adr/) for design decisions.
-TC ships the shared Growspace Manager brand assets under its own `brand/`
-directory. These are reused unchanged from the sibling integration under this
-project's GPL-3.0 license. Home Assistant serves these local assets without a
-separate submission to the Home Assistant brands repository.
+[AGENTS.md](AGENTS.md) has the worktree and validation commands,
+[CONTEXT.md](CONTEXT.md) the vocabulary, and [docs/adr/](docs/adr/) the
+decisions and why they went that way.
+
+The brand assets under `custom_components/growspace_manager_tc/brand/` are the
+Growspace Manager set, reused unchanged — both repositories are the same
+author's, under the same MIT [licence](LICENSE).
+Home Assistant's own `brands` component reads that directory for a custom
+integration before it asks the brands CDN, so the icon appears without a
+submission to the `home-assistant/brands` repository — which is why the HACS
+validation workflow ignores its `brands` check on purpose.
