@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import logging
 from typing import Any
 
@@ -547,12 +547,12 @@ class CultureRepository:
     ) -> MaintenanceAction:
         """End a Culture by taking it out of vitro.
 
-        A plain ending here, and nothing more: the bridge that creates the
-        corresponding Plant in Growspace Manager goes through that
-        integration's public service (ADR-0005) and is its own ticket.  What
-        this owes that bridge is a recorded, unambiguous end to point at.
+        Persist this ending before attempting the optional service bridge.
+        The bridge may complete its plant reference once; it cannot undo or
+        repeat the graduation.
         """
         culture = self._maintainable(culture_id)
+        note = note_text(note)
         self._cultures.records[culture.id] = culture.ended(CultureStatus.GRADUATED)
         return self._record(
             MaintenanceAction.recorded(
@@ -562,6 +562,23 @@ class CultureRepository:
                 now=now,
             )
         )
+
+    def link_graduated_plant(self, action_id: str, plant_id: str) -> MaintenanceAction:
+        """Complete a graduation's reference once, without rewriting its facts.
+
+        This is the sole exception to immutable action fields: the ending is
+        durable before GM runs, and the returned identity only exists afterwards.
+        No public command allows a recorded link to be edited or retried.
+        """
+        action = self._actions.records[action_id]
+        if (
+            action.action is not MaintenanceActionType.GRADUATE
+            or action.plant_id is not None
+        ):
+            raise TcValidationError("Only an unlinked graduation may receive a plant.")
+        linked = replace(action, plant_id=required_text(plant_id, "Plant", 64))
+        self._actions.records[action_id] = linked
+        return linked
 
     def _maintainable(self, culture_id: str) -> Culture:
         """Return a Culture that can still be acted on, or refuse.

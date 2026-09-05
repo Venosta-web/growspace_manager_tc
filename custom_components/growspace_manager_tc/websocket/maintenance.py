@@ -16,6 +16,8 @@ history.
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -24,9 +26,13 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
 from ..const import DOMAIN
+from ..models.common import required_text
 from ..models.maintenance import DiscardReason, MaintenanceAction, MaintenanceActionType
 from ..storage_manager import StorageManager
 from ._common import board_entry, tc_command
+
+_LOGGER = logging.getLogger(__name__)
+BRIDGE_TIMEOUT_SECONDS = 30
 
 WS_TYPE_REPLATE = f"{DOMAIN}/maintenance/replate"
 WS_TYPE_DISCARD = f"{DOMAIN}/maintenance/discard"
@@ -84,6 +90,13 @@ SCHEMA_WS_GRADUATE = websocket_api.BASE_COMMAND_MESSAGE_SCHEMA.extend(
         vol.Required("type"): WS_TYPE_GRADUATE,
         **_CULTURE,
         **_NOTE,
+        vol.Optional("plant"): {
+            vol.Required("growspace_id"): str,
+            vol.Required("strain"): str,
+            vol.Optional("phenotype", default=""): str,
+            vol.Required("row"): vol.All(int, vol.Range(min=1)),
+            vol.Required("col"): vol.All(int, vol.Range(min=1)),
+        },
     }
 )
 
@@ -165,19 +178,49 @@ async def websocket_move_to_rooting(
     return _recorded(storage, action)
 
 
+def _plant_id(response: Any) -> str:
+    """Validate the optional public service response before completing the link."""
+    if not isinstance(response, dict):
+        raise TypeError("add_plant returned no plant identity")
+    return required_text(response.get("plant_id"), "Plant", 64)
+
+
 @tc_command
 async def websocket_graduate(
     hass: HomeAssistant, storage: StorageManager, msg: dict[str, Any]
 ) -> dict[str, Any]:
-    """End a Culture by taking it out of vitro.
+    """Persist the ending first, then optionally create one GM clone.
 
-    A plain ending: creating the corresponding Plant in Growspace Manager goes
-    through that integration's public service (ADR-0005) and is its own ticket.
+    Omission of `plant` is opt-out. GM alone validates the destination and
+    genetics. Never decode TC's opaque phenotype reference or read GM internals.
+    A failed or unsupported call leaves the saved plain graduation intact.
     """
     action = storage.repository.graduate_culture(
         msg["culture_id"], note=msg.get("note")
     )
     await storage.async_save()
+    if "plant" in msg:
+        try:
+            async with asyncio.timeout(BRIDGE_TIMEOUT_SECONDS):
+                response = await hass.services.async_call(
+                    "growspace_manager",
+                    "add_plant",
+                    {**msg["plant"], "clone_start": action.recorded_at},
+                    blocking=True,
+                    return_response=True,
+                )
+            action = storage.repository.link_graduated_plant(
+                action.id, _plant_id(response)
+            )
+        except Exception:
+            # A remote operation can fail after creating a plant. Do not retry:
+            # retain the ending and let the grower inspect GM before adding one.
+            _LOGGER.exception(
+                "Culture %s graduated without a linked plant",
+                action.culture_id,
+            )
+        else:
+            await storage.async_save()
     return _recorded(storage, action)
 
 

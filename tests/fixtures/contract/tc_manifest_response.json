@@ -7,6 +7,12 @@
     "pairings": 0
   },
   "contract_version": 1,
-  "features": ["culture_media", "culture_lines", "maintenance", "pairings"],
+  "features": [
+    "culture_media",
+    "culture_lines",
+    "maintenance",
+    "pairings",
+    "graduation_bridge"
+  ],
   "integration_version": "0.1.0"
 }

@@ -11,6 +11,7 @@ from custom_components.growspace_manager_tc.const import (
     DOMAIN,
     FEATURE_CULTURE_LINES,
     FEATURE_CULTURE_MEDIA,
+    FEATURE_GRADUATION_BRIDGE,
     FEATURE_MAINTENANCE,
     FEATURE_PAIRINGS,
     STORAGE_KEY,
@@ -76,6 +77,7 @@ async def test_manifest_reports_the_contract(
             FEATURE_CULTURE_LINES,
             FEATURE_MAINTENANCE,
             FEATURE_PAIRINGS,
+            FEATURE_GRADUATION_BRIDGE,
         ],
         "collections": {
             "culture_media": 0,
