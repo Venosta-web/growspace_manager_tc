@@ -37,6 +37,6 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-          # This integration has no entry in home-assistant/brands, and cannot
-          # have one until it is published there.
+          # Brand images ship in custom_components/growspace_manager_tc/brand
+          # (supported since HA 2026.3); no remote brands entry is needed.
           ignore: brands
