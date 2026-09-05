@@ -1,0 +1,28 @@
+{
+  "pairings": [
+    {
+      "created_at": "2026-09-05T09:00:00+00:00",
+      "id": "pairing-1",
+      "medium_id": "medium-1",
+      "notes": "Grower endorsed.",
+      "phenotype": {
+        "id": "strain-a:keeper",
+        "name_snapshot": "Keeper",
+        "snapshot_at": "2026-09-05T09:00:00+00:00"
+      },
+      "updated_at": "2026-09-05T09:00:00+00:00"
+    },
+    {
+      "created_at": "2026-09-05T09:00:00+00:00",
+      "id": "pairing-2",
+      "medium_id": "medium-1",
+      "notes": "Grower endorsed.",
+      "phenotype": {
+        "id": "deleted-phenotype",
+        "name_snapshot": "Preserved name",
+        "snapshot_at": "2026-09-05T09:00:00+00:00"
+      },
+      "updated_at": "2026-09-05T09:00:00+00:00"
+    }
+  ]
+}

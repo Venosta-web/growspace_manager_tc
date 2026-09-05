@@ -16,3 +16,9 @@ built. Decisions are recorded in [`docs/adr/`](docs/adr/) and the vocabulary in
 Phenotype identity is owned by Growspace Manager: this integration references it
 and does not run without it. Setup refuses with an explanation if Growspace
 Manager is not installed and configured first.
+
+## Curated pairings
+
+Endorse phenotype–Culture Medium combinations with notes. The card offers both
+medium and phenotype views of the same pairing set, and references the medium
+across its versions. See the [WebSocket contract](docs/websocket-contract.md#curated-pairings).
