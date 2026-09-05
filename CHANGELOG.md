@@ -2,10 +2,12 @@
 
 ## 1.0.0 — V1
 
-The version in `custom_components/growspace_manager_tc/manifest.json`, and the
-one the card reads back from `get_manifest`. No GitHub release carries it yet:
-until one is published HACS installs this repository's default branch, and
-tagging is a separate decision from being ready to be tagged.
+The version in `custom_components/growspace_manager_tc/manifest.json`, the one
+the card reads back from `get_manifest`, and the one `v1.0.0` publishes: a push
+to `main` cuts the tag from the manifest and attaches
+`growspace_manager_tc.zip`, which `hacs.json` points HACS at instead of this
+repository's default branch. The archive carries the integration runtime only —
+no `tests/`, no `docs/`, no repository scaffolding.
 
 - Introduce Culture Lines from Growspace Manager phenotype references, with
   display-name snapshots, re-linking, and archiving.

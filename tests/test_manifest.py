@@ -35,6 +35,19 @@ def test_hacs_manifest_is_installable() -> None:
     assert hacs["homeassistant"]
 
 
+def test_hacs_installs_the_published_archive_and_not_the_branch() -> None:
+    """Without these two keys HACS copies the default branch into config/.
+
+    That ships tests/, docs/ and whatever else happens to be on `main` at the
+    moment the user clicks install. The release workflow builds the archive;
+    only hacs.json redirects HACS to it.
+    """
+    hacs = _load(_REPOSITORY / "hacs.json")
+
+    assert hacs["zip_release"] is True
+    assert hacs["filename"] == f"{DOMAIN}.zip"
+
+
 def test_english_translations_match_strings() -> None:
     """translations/en.json is the copy Home Assistant actually loads.
 

@@ -2,15 +2,13 @@
 
 ## Session isolation
 
-The main checkout is shared. Work on a branch in a repository-local worktree:
+The main checkout is shared. Work on a branch in a repository-local worktree,
+based on the channel the change belongs to (see **Base branch** below):
 
 ```bash
 git fetch origin
-git worktree add .worktrees/<branch-name> -b <branch-name> origin/main
+git worktree add .worktrees/<branch-name> -b <branch-name> origin/<base>
 ```
-
-Use `main` as the base until this repository documents another integration branch.
-The pre-commit guard rejects commits made directly on `main`.
 
 **Worktrees must live at `.worktrees/<name>`**, not anywhere else. The pre-commit
 hooks resolve Python tools through `../../.venv/bin/...`, which reaches the
@@ -20,6 +18,25 @@ is rejected as a side effect of the path.
 
 The workspace hub creates a matched TC + card pair for you with
 `./scripts/feature new <name> --tc`.
+
+### Base branch
+
+Two branches publish, so which one you branch from is a release decision:
+
+- **`main`** is the stable channel. A push publishes `vX.Y.Z` from
+  `custom_components/growspace_manager_tc/manifest.json` and HACS offers it to
+  everyone. Base ordinary feature and fix work here.
+- **`prerelease`** is the beta channel. A push publishes
+  `vX.Y.(Z+1)b<run>` — a beta of the _next_ patch — which HACS offers only with
+  `show_beta` enabled, and prunes to the newest five. Integrate work here when
+  it wants exercising by a tester before it reaches every install: architecture
+  and refactor changes, and anything whose blast radius is wider than its diff.
+
+Both are protected and reject commits made directly on them; the pre-commit
+guard rejects a commit on `main` locally as well. The manifest on `prerelease`
+keeps naming the _stable_ version it is a beta of — the prerelease workflow
+writes the computed version into its workspace copy and never commits it,
+because that stable number is what the next run's calculation reads.
 
 ## Test environment
 
