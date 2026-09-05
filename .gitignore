@@ -8,6 +8,9 @@ __pycache__/
 # Git worktrees
 .worktrees/
 
+# The release archive, when the builder is run with its default output
+/growspace_manager_tc.zip
+
 # Test and lint caches / reports
 .pytest_cache/
 .mypy_cache/

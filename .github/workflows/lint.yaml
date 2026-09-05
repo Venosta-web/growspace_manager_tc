@@ -49,10 +49,12 @@ jobs:
           python-version: "3.14"
       - name: Install lint tools
         run: python -m pip install --upgrade "ruff==0.15.12"
+      # `.github/scripts/` is Python that only CI ever runs, which is exactly
+      # why it has to be linted here: nothing else would notice it rotting.
       - name: ruff check
-        run: ruff check custom_components/ tests/
+        run: ruff check .github/scripts/ custom_components/ tests/
       - name: ruff format --check
-        run: ruff format --check custom_components/ tests/
+        run: ruff format --check .github/scripts/ custom_components/ tests/
 
   mypy:
     name: mypy
@@ -79,4 +81,4 @@ jobs:
           )"
           pip install -r requirements.txt -c "$constraints_file"
       - name: mypy
-        run: mypy --follow-imports=silent custom_components/
+        run: mypy --follow-imports=silent .github/scripts/ custom_components/
