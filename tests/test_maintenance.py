@@ -478,3 +478,29 @@ def test_a_vessel_that_is_not_an_object_is_named_as_such() -> None:
         repository.replate_culture(
             culture.id, medium.id, medium.current_version.version, ["Shelf A"]
         )
+
+
+def test_graduation_link_is_completed_once_without_rewriting_the_ending() -> None:
+    """Only a graduation can gain a link, and its original facts stay immutable."""
+    repository, _line, culture, _medium_record = _bench()
+    note = repository.note_on_culture(culture.id, "Healthy", now=A_TIME)
+    with pytest.raises(TcValidationError, match="Only an unlinked graduation"):
+        repository.link_graduated_plant(note.id, "plant-1")
+
+    action = repository.graduate_culture(culture.id, note="Humidity dome.", now=LATER)
+    linked = repository.link_graduated_plant(action.id, "plant-1")
+    assert linked.to_dict() == {**action.to_dict(), "plant_id": "plant-1"}
+    with pytest.raises(TcValidationError, match="Only an unlinked graduation"):
+        repository.link_graduated_plant(action.id, "plant-2")
+    assert repository.maintenance_actions()[0].plant_id == "plant-1"
+
+
+def test_legacy_graduation_decodes_without_a_plant_reference() -> None:
+    """Older stores keep their ending and acquire no invented link."""
+    repository, _line, culture, _medium_record = _bench()
+    action = repository.graduate_culture(culture.id, now=LATER)
+    legacy = action.to_dict()
+    del legacy["plant_id"]
+    restored = MaintenanceAction.from_dict(action.id, legacy)
+    assert restored == action
+    assert restored.plant_id is None
