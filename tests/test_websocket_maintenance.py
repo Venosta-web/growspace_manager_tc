@@ -1,6 +1,7 @@
 """Tests for the Maintenance Action commands and the history they write."""
 
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -23,7 +24,8 @@ from custom_components.growspace_manager_tc.websocket import (
     WS_TYPE_NOTE,
     WS_TYPE_REPLATE,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.exceptions import HomeAssistantError
 
 AN_INTRODUCTION: dict[str, Any] = {
     "phenotype_id": "Blue Dream|Pheno 2",
@@ -320,3 +322,115 @@ async def test_maintenance_refuses_when_no_entry_is_loaded(
 
     assert not response["success"]
     assert response["error"]["code"] == WS_ERR_NOT_LOADED
+
+
+PLANT_REQUEST = {
+    "growspace_id": "tent",
+    "strain": "Blue Dream",
+    "phenotype": "Pheno 2",
+    "row": 1,
+    "col": 2,
+}
+
+
+async def test_graduation_creates_and_persists_link(
+    hass: HomeAssistant,
+    bench: Bench,
+    hass_storage: dict[str, Any],
+    entry: MockConfigEntry,
+) -> None:
+    """The real service registry receives one clone; reload preserves its ID."""
+    calls = []
+
+    async def add_plant(call: ServiceCall) -> dict[str, str]:
+        calls.append(call)
+        # TC is already durable when the external operation begins.
+        stored = hass_storage[STORAGE_KEY]["data"]
+        assert next(iter(stored["cultures"].values()))["status"] == "graduated"
+        return {"plant_id": "created-plant"}
+
+    hass.services.async_register(
+        "growspace_manager",
+        "add_plant",
+        add_plant,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    result = await bench.ok(
+        WS_TYPE_GRADUATE, culture_id=bench.culture["id"], plant=PLANT_REQUEST
+    )
+    assert result["action"]["plant_id"] == "created-plant"
+    assert len(calls) == 1
+    assert dict(calls[0].data) == {
+        **PLANT_REQUEST,
+        "clone_start": result["action"]["recorded_at"],
+    }
+    await entry.runtime_data.async_load()
+    history = await bench.ok(WS_TYPE_MAINTENANCE_HISTORY)
+    assert history["actions"][0]["plant_id"] == "created-plant"
+    again = await bench.call(
+        WS_TYPE_GRADUATE, culture_id=bench.culture["id"], plant=PLANT_REQUEST
+    )
+    assert not again["success"]
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    "outcome", ["raises", "missing", "legacy", "invalid", "empty", "timeout"]
+)
+async def test_bridge_failure_keeps_the_graduation(
+    hass: HomeAssistant,
+    bench: Bench,
+    hass_storage: dict[str, Any],
+    outcome: str,
+) -> None:
+    """Unavailable, old, failing and malformed GM services never undo an ending."""
+
+    async def add_plant(call: ServiceCall) -> dict[str, Any] | None:
+        if outcome == "empty":
+            return None
+        if outcome == "raises":
+            raise HomeAssistantError("No room")
+        if outcome == "timeout":
+            raise TimeoutError
+        return {"plant_id": 42}
+
+    if outcome != "missing":
+        hass.services.async_register(
+            "growspace_manager",
+            "add_plant",
+            add_plant,
+            supports_response=SupportsResponse.NONE
+            if outcome == "legacy"
+            else SupportsResponse.OPTIONAL,
+        )
+    result = await bench.ok(
+        WS_TYPE_GRADUATE, culture_id=bench.culture["id"], plant=PLANT_REQUEST
+    )
+    assert result["line"]["cultures"][0]["status"] == "graduated"
+    assert result["action"]["plant_id"] is None
+    stored = hass_storage[STORAGE_KEY]["data"]["maintenance_actions"]
+    assert stored[result["action"]["id"]]["plant_id"] is None
+
+
+async def test_opt_out_never_calls_gm(hass: HomeAssistant, bench: Bench) -> None:
+    """Omitting the plant request preserves the original command behaviour."""
+    call = AsyncMock(return_value={"plant_id": "should-not-exist"})
+    hass.services.async_register(
+        "growspace_manager",
+        "add_plant",
+        call,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    result = await bench.ok(WS_TYPE_GRADUATE, culture_id=bench.culture["id"])
+    call.assert_not_called()
+    assert result["action"]["plant_id"] is None
+
+
+async def test_invalid_graduation_note_does_not_end_culture(bench: Bench) -> None:
+    """Local validation happens before committing the ending or calling GM."""
+    result = await bench.call(
+        WS_TYPE_GRADUATE, culture_id=bench.culture["id"], note="x" * 2001
+    )
+    assert not result["success"]
+    result = await bench.ok(WS_TYPE_GRADUATE, culture_id=bench.culture["id"])
+    assert result["action"]["action"] == "graduate"

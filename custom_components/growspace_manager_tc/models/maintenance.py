@@ -7,7 +7,9 @@ what a vessel currently sits on, when it is next due, how many plantlets one
 division produced — so every act is a typed record with the fields its own
 question needs, and none of them is ever edited or removed.
 
-**History is append-only.**  Nothing in this module returns a modified action,
+**History is append-only.** Graduation may complete its plant reference once
+after the external service responds; the ending itself never changes.
+Nothing in this module returns a modified action,
 because there is no such thing: a Culture's past is the sequence of actions
 written against it, and an act that could be rewritten would make the Replate
 Due Date, the Plantlet Count series and the Plating trail behind a Pairing all
@@ -234,6 +236,8 @@ class MaintenanceAction:
     # Move to rooting only: the stage the Culture was moved to, so a reader
     # need not know that today only one move exists.
     stage: CultureStage | None
+    # Graduation only: completed once by the optional public-service bridge.
+    plant_id: str | None = None
 
     @classmethod
     def recorded(
@@ -283,6 +287,11 @@ class MaintenanceAction:
             ),
             recorded_at=required_text(payload.get("recorded_at"), "Recorded at", 64),
             note=note_text(payload.get("note")),
+            plant_id=(
+                required_text(payload["plant_id"], "Plant", 64)
+                if payload.get("plant_id") is not None
+                else None
+            ),
             medium_id=_optional_id(payload.get("medium_id")),
             medium_version=_optional_version(payload.get("medium_version")),
             vessels=tuple(ReplateVessel.from_dict(entry) for entry in raw_vessels),
@@ -307,6 +316,7 @@ class MaintenanceAction:
             "action": self.action.value,
             "recorded_at": self.recorded_at,
             "note": self.note,
+            "plant_id": self.plant_id,
             "medium_id": self.medium_id,
             "medium_version": self.medium_version,
             "vessels": [vessel.to_dict() for vessel in self.vessels],

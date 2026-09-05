@@ -114,9 +114,10 @@ def _build_contract_payload() -> dict[str, object]:
             culture.id, "Slight vitrification on two plantlets.", now=RECORDED_TIMES[2]
         )
         repository.move_culture_to_rooting(culture.id, now=RECORDED_TIMES[3])
-        repository.graduate_culture(
+        graduation = repository.graduate_culture(
             culture.id, note="Out to the humidity dome.", now=RECORDED_TIMES[4]
         )
+        repository.link_graduated_plant(graduation.id, "gm-plant-1")
         repository.discard_culture(
             split_off, "contamination", note="Bacterial haze.", now=RECORDED_TIMES[4]
         )

@@ -219,7 +219,7 @@ the card can show what it just wrote without re-reading the history.
 
 An `Action` is flat, with every field always present:
 `{ id, culture_id, line_id, action, recorded_at, note, medium_id,
-medium_version, vessels, reason, stage }`. The fields an act does not use are
+medium_version, vessels, reason, stage, plant_id }`. The fields an act does not use are
 `null` or empty rather than absent — the card reads one schema, a persisted
 record decodes without knowing which act it is first, and a reader counting
 replates never has to guess whether a missing key means "not applicable" or "an
@@ -325,3 +325,34 @@ before deleting the medium itself.
 The producer-verified wire fixture is
 [`tc_pairings_response.json`](../tests/fixtures/contract/tc_pairings_response.json).
 Land this contract before the card change that consumes it.
+
+## Optional graduation bridge
+
+The `graduation_bridge` capability adds an optional `plant` object to
+`maintenance/graduate`: `{ growspace_id, strain, phenotype?, row, col }`.
+Omitting it is opt-out and sends no GM service call. The card resolves genetics
+from the current strain library and lets the grower confirm them; TC never
+parses the opaque phenotype reference. Row and column are one-based.
+
+TC saves the plain graduation before calling `growspace_manager.add_plant`
+with these fields and `clone_start` set to the graduation timestamp. GM returns
+`{ plant_id }` when called with `return_response=True`; old callers need not
+request a response. The plant starts as a clone and can later move to veg
+through GM's existing lifecycle controls.
+
+`plant_id` is null on an unlinked action. Older stored actions without this
+field decode as null. On success, TC completes that reference once and saves it.
+This completion is the only mutable field of an action; its ending, timestamp,
+note and identity cannot change. There is no public retry or link-edit command.
+A concurrent or repeated graduation is refused before another plant is created.
+
+Missing or older GM services, exceptions, invalid responses, and a 30-second
+bridge timeout leave the plain graduation intact. There is no automatic retry:
+a failed or interrupted call might already have created a plant. The card tells
+the grower to inspect GM before adding one manually. The same limitation applies
+to a process crash between GM creation and saving the returned reference; this
+is not a transaction across integrations.
+
+The card gates the opt-in form on the capability and shows the saved plant link
+in the history of ended cultures. Land GM's optional service response first,
+then TC's contract, then the card.

@@ -72,3 +72,5 @@ SIGNAL_TC_UPDATED: Final = f"{DOMAIN}_updated"
 
 COLLECTION_PAIRINGS: Final = "pairings"
 FEATURE_PAIRINGS: Final = "pairings"
+
+FEATURE_GRADUATION_BRIDGE = "graduation_bridge"
