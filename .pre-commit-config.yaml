@@ -9,7 +9,7 @@ repos:
         args:
           - --fix
       - id: ruff-format
-        files: ^(custom_components|tests)/.+\.(py|pyi)$
+        files: ^(\.github/scripts|custom_components|tests)/.+\.(py|pyi)$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
@@ -56,4 +56,4 @@ repos:
         language: system
         require_serial: true
         types_or: [python, pyi]
-        files: ^custom_components/.+\.(py|pyi)$
+        files: ^(\.github/scripts|custom_components)/.+\.(py|pyi)$
