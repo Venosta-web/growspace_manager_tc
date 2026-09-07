@@ -12,6 +12,12 @@ a bench, hold your Culture Medium recipes with their history intact, record
 which phenotype does well on which medium, and hand a rooted vessel back to
 Growspace Manager as a plant.
 
+![The replate worklist](assets/screenshots/worklist.png)
+_Every live vessel carries a Replate Due Date — its last act plus the interval
+its Culture Line sets for the stage that vessel is on. The card opens on the
+ones that have come round, overdue first, with the five Maintenance Actions on
+each._
+
 ## Requirements
 
 - Home Assistant **2026.8.1 or newer** and HACS **2.0.5 or newer**.
@@ -111,6 +117,72 @@ and not merely downloaded in HACS — HACS installing files and Home Assistant
 setting an integration up are two different things. If TC is missing from the
 card, check that its entry is loaded, that the card is new enough, and reload
 the dashboard.
+
+## Screenshots
+
+### Culture Lines and their vessels
+
+A Culture Line is one phenotype, borrowed from Growspace Manager and never
+owned by TC. The vessels standing under it are its Cultures, each on a stage
+with its own replate interval. The highlighted line is a **Missing phenotype**:
+what it referenced has left the strain library, so the line keeps the name it
+snapshotted when it was started and offers a re-link or an archive. Nothing is
+deleted because something it pointed at went away — and the two graduated
+vessels are still there to read.
+
+![Culture Lines, one of them missing its phenotype](assets/screenshots/culture-lines.png)
+
+### A Replate, which is also a division
+
+A Replate pins the Medium Version it was poured from, so last month's plating
+still points at the recipe it actually used rather than at today's. The first
+vessel out of it _is_ this Culture, replated — same identity, same history.
+Every further vessel is a new Culture in the same line. Recording it moves the
+line's due-date anchor; moving a vessel to rooting does not, and only changes
+which interval applies.
+
+![Replating a culture onto a chosen medium version](assets/screenshots/replate.png)
+
+### Culture Media, and why editing one forks it
+
+Editing a medium never rewrites what came before. Each change records a new
+immutable Medium Version, so Version 1 stays exactly what it was on the day
+something was plated onto it — which is the only reason a Replate's pin means
+anything a year later.
+
+![A culture medium with both of its versions](assets/screenshots/culture-media.png)
+
+### Curated Pairings
+
+A Pairing endorses a phenotype and a Culture Medium together, with your notes.
+It applies across every version of that medium — pinning one version is what a
+Replate does, not what a Pairing does. Grouping by medium and grouping by
+phenotype are two readings of the same set rather than two lists to keep in
+step, and a pairing whose phenotype has left the strain library says so instead
+of vanishing.
+
+![Pairings grouped by culture medium](assets/screenshots/pairings.png)
+
+### A graduation that crossed back
+
+Graduating ends a Culture and keeps its history. It can also create the plant
+in Growspace Manager, through that integration's own public service, and the
+graduation record then holds the plant's ID — the link below. A graduation
+whose bridge declined or failed is recorded just the same, with no link, because
+the Culture has ended either way and TC does not retry it for you.
+
+![A graduation linked to the plant it created](assets/screenshots/graduation.png)
+
+### The replate calendar
+
+One calendar entity carries the Replate Due Date of every live vessel, for the
+calendar panel or as an automation trigger. Overdue work shows there and on the
+card; there are deliberately no separate overdue entities that could disagree
+with it.
+
+![Replate due dates in the Home Assistant calendar panel](assets/screenshots/calendar.png)
+
+---
 
 ## V1 boundaries
 
