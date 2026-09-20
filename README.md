@@ -33,6 +33,8 @@ each._
 
 ## Install through HACS
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Venosta-web&repository=growspace_manager_tc&category=integration)
+
 1. **Install and configure Growspace Manager first**, and give it something to
    work with: one phenotype in its strain library, and a growspace with a free
    position for a graduated culture to land in.
