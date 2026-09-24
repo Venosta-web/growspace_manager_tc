@@ -28,8 +28,8 @@ pytest-homeassistant-custom-component==0.13.355
 # Local dev tooling — CI installs separate copies using matching pins in
 # lint.yaml. Keep versions synchronized so local checks agree with the gate.
 # Move the corresponding pre-commit rev with any Ruff or yamllint version bump.
-ruff==0.15.12
-mypy==1.20.2
+ruff==0.16.8
+mypy==2.3.1
 pre-commit==4.6.2
-yamllint==1.37.1
+yamllint==1.38.0
 codespell
