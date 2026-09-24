@@ -17,7 +17,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
 
       # The computed version is written into the workspace copy of the manifest
       # and never committed: `prerelease` keeps naming the stable version it is
