@@ -60,7 +60,7 @@ def main(args: list[str]) -> int:
         sys.stderr.write(f"{tool} is not installed; tried {', '.join(tried)}\n")
         return 2
     os.execv(binary, [binary, *args[1:]])
-    return 0
+    return 0  # type: ignore[unreachable]  # execv only returns in a mocked test
 
 
 if __name__ == "__main__":
