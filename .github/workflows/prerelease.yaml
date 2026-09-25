@@ -17,7 +17,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
 
       # The computed version is written into the workspace copy of the manifest
       # and never committed: `prerelease` keeps naming the stable version it is
@@ -50,7 +50,7 @@ jobs:
 
       # 3. Creates the GitHub Pre-release and attaches the new zip file
       - name: Create Pre-release
-        uses: softprops/action-gh-release@v3.0.2
+        uses: softprops/action-gh-release@v3.0.3
         with:
           prerelease: true
           tag_name: v${{ steps.version_step.outputs.version }}
