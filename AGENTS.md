@@ -10,11 +10,10 @@ git fetch origin
 git worktree add .worktrees/<branch-name> -b <branch-name> origin/<base>
 ```
 
-**Worktrees must live at `.worktrees/<name>`**, not anywhere else. The pre-commit
-hooks resolve Python tools through `../../.venv/bin/...`, which reaches the
-repository venv only from exactly that depth — from the main checkout it resolves
-to `~/dev/.venv`, which does not exist, so every commit from the shared checkout
-is rejected as a side effect of the path.
+**Worktrees must live at `.worktrees/<name>`**. The Python pre-commit hooks
+resolve tools from the worktree's own `.venv` first, then the main checkout's
+`.venv` via `git rev-parse --git-common-dir`. The `no-commit-to-branch` hook
+protects `main` in the shared checkout.
 
 The workspace hub creates a matched TC + card pair for you with
 `./scripts/feature new <name> --tc`.
@@ -40,9 +39,14 @@ because that stable number is what the next run's calculation reads.
 
 ## Test environment
 
-One repository-local `.venv` (Python 3.14) lives in the main checkout and every
-worktree shares it: `.venv/bin/pytest` from the main checkout,
-`../../.venv/bin/pytest` from a worktree — the path the hooks already use.
+The Python pre-commit hooks run through `.github/scripts/run_venv_tool.py`.
+They use `<worktree>/.venv/bin/<tool>` when present (including a symlink), then
+the main checkout's `.venv/bin/<tool>`. If neither has pytest or mypy, the hook
+fails and names both paths. A worktree with no `.venv`, or one linked to the main
+venv, keeps using the main environment. A branch that changes dependency pins
+can instead use a private `.venv` built from its own `requirements.txt`; this
+keeps its hooks independent of other worktrees. See hub ADR 0004, "Python hooks
+run the worktree's own venv".
 
 **Never a Home Assistant core venv.** Its `syrupy` is newer than the one
 `pytest-homeassistant-custom-component` pins, and every test dies at collection.
@@ -67,7 +71,8 @@ the requirement that is unmet.
 ## Validation
 
 ```bash
-../../.venv/bin/pytest tests/ -q          # from a worktree
+.venv/bin/pytest tests/ -q               # with a private or linked worktree .venv
+../../.venv/bin/pytest tests/ -q          # from a worktree with no .venv
 pre-commit run --all-files                # repository files, ruff, mypy, pytest
 ```
 

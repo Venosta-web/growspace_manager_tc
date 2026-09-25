@@ -37,20 +37,16 @@ repos:
           - prettier-plugin-sort-json@4.2.0
   - repo: local
     hooks:
-      # `../../.venv` is the repository venv seen from a worktree at
-      # .worktrees/<name> — the depth AGENTS.md requires. From the main
-      # checkout it resolves to ~/dev/.venv, which does not exist, and every
-      # commit from the shared checkout is rejected as a side effect.
       - id: pytest
         name: pytest
-        entry: ../../.venv/bin/pytest
+        entry: python3 .github/scripts/run_venv_tool.py pytest
         language: system
         pass_filenames: false
         types: [python]
         files: ^(custom_components|tests)/.+\.py$
       - id: mypy
         name: mypy
-        entry: ../../.venv/bin/mypy
+        entry: python3 .github/scripts/run_venv_tool.py mypy
         args: [--follow-imports=silent]
         language: system
         require_serial: true
