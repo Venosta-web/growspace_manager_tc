@@ -20,10 +20,10 @@
 # Home Assistant Core (minimal)
 # Kept in lockstep with pytest-homeassistant-custom-component, which pins this
 # exact homeassistant version; bumping one requires bumping the other.
-homeassistant==2026.8.1
+homeassistant==2026.9.3
 
 # Test dependencies
-pytest-homeassistant-custom-component==0.13.355
+pytest-homeassistant-custom-component==0.13.366
 
 # Local dev tooling — CI installs separate copies using matching pins in
 # lint.yaml. Keep versions synchronized so local checks agree with the gate.
