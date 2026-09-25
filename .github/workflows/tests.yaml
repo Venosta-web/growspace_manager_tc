@@ -83,7 +83,7 @@ jobs:
           --cov-report=xml:coverage.xml
       - name: Upload coverage reports to Codecov
         if: steps.scaffold.outputs.ready == 'true'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           use_oidc: true
           files: ./coverage.xml
